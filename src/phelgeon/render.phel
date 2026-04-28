@@ -278,6 +278,32 @@
        ""
        (log-block (:log state))])))
 
+(defn- center [text]
+  (let [n (count text)
+        pad (max 0 (php/intval (/ (- ct/CONTENT-WIDTH n) 2)))]
+    (str (php/str_repeat " " pad) text)))
+
+(defn- intro-frame [_state]
+  (s/join "\n"
+    (concat
+      [""
+       (bold-yellow (center ct/INTRO-TITLE))
+       (dim (center ct/INTRO-SUBTITLE))
+       ""
+       (thin-divider)
+       ""]
+      ct/INTRO-LORE
+      [""
+       (thin-divider)
+       ""
+       (bold-white "CONTROLS")
+       ""]
+      (for [l :in ct/INTRO-CONTROLS] (gray l))
+      [""
+       (thin-divider)
+       ""
+       (cyan "> Press any key to begin.")])))
+
 (defn- end-frame [state]
   (let [banner (case (:mode state)
                  :gameover (bold-red    "                    YOU DIED")
@@ -302,6 +328,7 @@
 
 (defn render [state]
   (case (:mode state)
+    :intro     (intro-frame state)
     :explore   (explore-frame state)
     :combat    (combat-frame state)
     :inventory (inventory-frame state)

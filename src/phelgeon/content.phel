@@ -113,6 +113,29 @@
    ["Throne of Cinders" "The Final Descent" "Emberkeep"]])
 
 ;; =============================================================================
+;; Intro screen — shown once at game start
+;; =============================================================================
+
+(def INTRO-TITLE "PHELGEON")
+(def INTRO-SUBTITLE "a descent in three floors")
+
+(def INTRO-LORE
+  ["Three floors lie below — older than memory, hungry as ever."
+   "Each one rearranges itself with every descent: goblins in the"
+   "shadows, traps in the floors, treasures buried in old dust."
+   ""
+   "At the bottom of the third floor sits a thing that has waited"
+   "a long time. Whoever it was once, it is something else now."
+   "You are not the first to come down. You may not be the last."
+   ""
+   "Find the stairs. Survive what's between. Strike true at the throne."])
+
+(def INTRO-CONTROLS
+  ["EXPLORE     n s e w   move          i  inventory     q  quit"
+   "COMBAT      a attack   f  flee       u  potion        b  bomb"
+   "INVENTORY   1 potion   2  heal       b  back"])
+
+;; =============================================================================
 ;; Room descriptions — 4 per type
 ;; =============================================================================
 

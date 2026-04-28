@@ -217,7 +217,7 @@
      :current   :entrance
      :visited   #{:entrance}
      :log       []
-     :mode      :explore
+     :mode      :intro                  ; show intro screen first
      :combat    nil
      :pending-descend false
      :pending-quit    false}))
@@ -252,6 +252,7 @@
                    :noop)
       :inventory (case first-c
                    "1" :slot-1  "2" :slot-2  "b" :back  :noop)
+      :intro     :enter
       :gameover  :enter
       :victory   :enter
       :quit      :enter
@@ -544,6 +545,9 @@
 
 (defn step [state cmd]
   (case (:mode state)
+    :intro
+    (assoc state :mode :explore)        ; any key dismisses the intro
+
     :explore
     (cond
       (:pending-descend state)

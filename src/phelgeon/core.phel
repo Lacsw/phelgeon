@@ -6,17 +6,19 @@
 ;; RNG wrappers (only impure-ish thing in core; isolated here)
 ;; =============================================================================
 
+;; NOTE: Phel's built-in `(rand-int n)` is INCLUSIVE — returns 0..n via php/random_int.
+;; Adjust upper bounds with `dec` where we want exclusive 0..n-1 semantics.
+
 (defn- rand-pick [v]
-  ;; Phel's built-in `rand-int` returns 0..n-1
-  (get v (rand-int (count v))))
+  (get v (rand-int (dec (count v)))))
 
 (defn- rand-range [lo hi]
   ;; Inclusive both ends
-  (+ lo (rand-int (inc (- hi lo)))))
+  (+ lo (rand-int (- hi lo))))
 
 (defn- rand-percent? [pct]
-  ;; Returns true with `pct`% probability
-  (< (rand-int 100) pct))
+  ;; Returns true with `pct`% probability (uses 0..99)
+  (< (rand-int 99) pct))
 
 (defn- jitter [base pct]
   ;; base ± pct% (integer math). Returns an int in [base-delta .. base+delta].
@@ -30,8 +32,14 @@
 ;; =============================================================================
 
 (defn- log [state msg]
-  (let [msgs (concat (:log state) [msg])
-        kept (vec (take-last ct/MAX-LOG-LINES msgs))]
+  ;; Append msg, then keep only the last MAX-LOG-LINES entries.
+  ;; Implemented via `drop` rather than `take-last` because Phel's `take-last`
+  ;; throws "Cannot slice" when n exceeds the collection length.
+  (let [msgs (vec (concat (:log state) [msg]))
+        n (count msgs)
+        kept (if (<= n ct/MAX-LOG-LINES)
+               msgs
+               (vec (drop (- n ct/MAX-LOG-LINES) msgs)))]
     (assoc state :log kept)))
 
 ;; =============================================================================
@@ -122,7 +130,7 @@
       (cond
         (zero? remaining) m
         (zero? (count pool)) m
-        :else (let [pick-idx (rand-int (count pool))
+        :else (let [pick-idx (rand-int (dec (count pool)))
                     [a b] (get pool pick-idx)
                     next-pool (vec (concat (take pick-idx pool)
                                            (drop (inc pick-idx) pool)))

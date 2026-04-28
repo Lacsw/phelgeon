@@ -4,9 +4,11 @@
   (:require phel-cli-gui\terminal-gui :as gui))
 
 (defn- read-line []
-  ;; Reads a line from stdin; returns "" on EOF.
+  ;; Reads a line from stdin. Returns the string, or `:eof` if stdin closed.
   (let [line (php/fgets php/STDIN)]
-    (if (or (= line false) (nil? line)) "" line)))
+    (cond
+      (or (= line false) (nil? line)) :eof
+      :else line)))
 
 (defn- draw [state]
   (gui/clear-screen)
@@ -22,10 +24,10 @@
   (cond
     (end? state) state
     :else
-    (let [raw (read-line)
-          cmd (c/parse-input raw (:mode state))
-          next-state (c/step state cmd)]
-      (recur next-state))))
+    (let [raw (read-line)]
+      (if (= raw :eof)
+        (recur (assoc state :mode :quit))        ; EOF → render quit summary, then exit
+        (recur (c/step state (c/parse-input raw (:mode state))))))))
 
 (defn main []
   (gui/clear-screen)

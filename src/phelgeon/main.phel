@@ -1,28 +1,97 @@
 (ns phelgeon\main
+  (:require phel\string :as s)
   (:require phelgeon\core :as c)
-  (:require phelgeon\render :as r))
+  (:require phelgeon\render :as r)
+  (:require phelgeon\content :as ct))
 
 ;; -----------------------------------------------------------------------------
-;; Raw ANSI terminal helpers (avoiding phel-cli-gui because its lazy init
-;; switches stdin to non-blocking mode, which breaks turn-based fgets reads).
+;; Terminal lifecycle: alternate-screen buffer + raw-mode (cbreak) input.
+;;
+;; We don't use phel-cli-gui because its lazy init flips stdin to non-blocking,
+;; which clashes with our turn-based reads. Instead we save the current stty
+;; settings, drop into -icanon -echo, and restore on shutdown.
 ;; -----------------------------------------------------------------------------
+
+(def ORIG-STTY (atom nil))
 
 (defn- emit [s] (php/fwrite php/STDOUT s))
 
-(defn- clear-screen []  (emit "\e[2J\e[H"))
-(defn- hide-cursor  []  (emit "\e[?25l"))
-(defn- show-cursor  []  (emit "\e[?25h"))
+(defn- run-stty [args]
+  (php/shell_exec (str "stty " args " 2>/dev/null")))
 
-(defn- read-line []
-  ;; Reads a line from stdin. Returns the string, or `:eof` if stdin closed.
-  (let [line (php/fgets php/STDIN)]
+(defn- enter-game-mode []
+  (let [orig (php/shell_exec "stty -g 2>/dev/null")]
+    (when (string? orig)
+      (reset! ORIG-STTY (s/trim orig))))
+  (run-stty "-icanon -echo")
+  (emit "\e[?1049h")              ; alternate screen buffer
+  (emit "\e[2J\e[H")              ; clear, home
+  (emit "\e[?25l"))               ; hide cursor
+
+(defn- exit-game-mode []
+  (let [orig @ORIG-STTY]
+    (when (and (string? orig) (not (s/blank? orig)))
+      (run-stty (php/escapeshellarg orig))))
+  (emit "\e[?25h")                ; show cursor
+  (emit "\e[?1049l")              ; restore main screen
+  (php/fflush php/STDOUT))
+
+;; -----------------------------------------------------------------------------
+;; ANSI-aware width and box drawing
+;; -----------------------------------------------------------------------------
+
+(defn- ansi-strip [str-val]
+  (php/preg_replace "/\\x1b\\[[0-9;?]*[a-zA-Z]/" "" str-val))
+
+(defn- visible-len [str-val]
+  (php/mb_strlen (ansi-strip str-val)))
+
+(defn- pad-right [str-val width]
+  (let [vl (visible-len str-val)]
+    (if (>= vl width)
+      str-val
+      (str str-val (php/str_repeat " " (- width vl))))))
+
+(defn- wrap-line [str-val width]
+  ;; Word-wrap a line to `width` visible columns. Lines containing ANSI escapes
+  ;; are passed through unchanged (their visible length is short anyway).
+  (cond
+    (<= (visible-len str-val) width) [str-val]
+    (not= str-val (ansi-strip str-val)) [str-val]   ; has color, skip wrapping
+    :else (php/explode "\n" (php/wordwrap str-val width "\n" true))))
+
+(defn- box-frame [content]
+  (let [horiz (php/str_repeat "─" (+ ct/CONTENT-WIDTH 2))
+        top (str "┌" horiz "┐")
+        bot (str "└" horiz "┘")
+        raw-lines (php/explode "\n" content)
+        wrapped (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
+        boxed (for [l :in wrapped]
+                (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
+    (str top "\n" (s/join "\n" boxed) "\n" bot)))
+
+;; -----------------------------------------------------------------------------
+;; Input
+;; -----------------------------------------------------------------------------
+
+(defn- read-key []
+  ;; Single byte from stdin. Returns the char string, or :eof on stdin close.
+  (let [c (php/fread php/STDIN 1)]
     (cond
-      (or (= line false) (nil? line)) :eof
-      :else line)))
+      (or (= c false) (= c "")) :eof
+      :else c)))
+
+;; Note: arrow keys send a 3-byte sequence (\e[A etc.). We only read one byte
+;; at a time, so an arrow press becomes three :noop steps (one for \e, one for
+;; [, one for the letter). Acceptable; the box doesn't shift.
+
+;; -----------------------------------------------------------------------------
+;; Game loop
+;; -----------------------------------------------------------------------------
 
 (defn- draw [state]
-  (clear-screen)
-  (emit (r/render state))
+  (emit "\e[H\e[J")             ; home + clear from cursor down
+  (emit (box-frame (r/render state)))
   (emit "\n"))
 
 (defn- end? [state]
@@ -35,19 +104,16 @@
   (cond
     (end? state) state
     :else
-    (let [raw (read-line)]
-      (if (= raw :eof)
-        (recur (assoc state :mode :quit))        ; EOF → render quit summary, then exit
-        (recur (c/step state (c/parse-input raw (:mode state))))))))
+    (let [raw (read-key)]
+      (cond
+        (= raw :eof) (recur (assoc state :mode :quit))
+        :else        (recur (c/step state (c/parse-input raw (:mode state))))))))
 
 (defn main []
-  (clear-screen)
-  (hide-cursor)
-  (php/register_shutdown_function (fn [] (show-cursor)))
-  (let [final-state (game-loop (c/make-initial-state))]
-    (read-line)
-    (clear-screen)
-    (show-cursor)
+  (enter-game-mode)
+  (php/register_shutdown_function exit-game-mode)
+  (let [_final (game-loop (c/make-initial-state))]
+    (read-key)                 ; press any key to dismiss the end summary
     :ok))
 
 (main)

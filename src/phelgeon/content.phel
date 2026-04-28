@@ -21,7 +21,9 @@
 (def FINAL-FLOOR 3)
 (def MAX-LOG-LINES 3)
 (def HP-BAR-WIDTH 8)
-(def HEADER-WIDTH 60)
+(def HEADER-WIDTH 68)        ; divider width inside the box
+(def CONTENT-WIDTH 68)       ; usable text width inside the box
+(def WRAP-WIDTH 68)          ; word-wrap width for descriptions
 
 ;; =============================================================================
 ;; Enemies

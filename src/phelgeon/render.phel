@@ -123,7 +123,7 @@
       (str "> " (hint "1" (str "..." n " use potion")) "  " (hint "b" "ack")))))
 
 (defn- end-prompt []
-  "> Press enter to exit.")
+  "> Press any key to exit.")
 
 ;; =============================================================================
 ;; Frame builders

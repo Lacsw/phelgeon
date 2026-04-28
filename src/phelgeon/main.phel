@@ -19,11 +19,24 @@
 (defn- run-stty [args]
   (php/shell_exec (str "stty " args " 2>/dev/null")))
 
+(defn- apply-raw-mode []
+  (run-stty "-icanon -echo"))
+
+(defn- install-winch-handler []
+  ;; Some terminal hosts (VS Code panel, certain tmux setups) reset stty back
+  ;; to cooked mode when the window is resized. That makes `n` / `q` etc. sit
+  ;; in a line buffer until Enter is pressed and looks like the game has
+  ;; stopped responding. Catch SIGWINCH and reapply our raw-mode settings.
+  (when (php/function_exists "pcntl_async_signals")
+    (php/pcntl_async_signals true)
+    (php/pcntl_signal php/SIGWINCH (fn [_signal] (apply-raw-mode)))))
+
 (defn- enter-game-mode []
   (let [orig (php/shell_exec "stty -g 2>/dev/null")]
     (when (string? orig)
       (reset! ORIG-STTY (s/trim orig))))
-  (run-stty "-icanon -echo")
+  (apply-raw-mode)
+  (install-winch-handler)
   (emit "\e[?1049h")              ; alternate screen buffer
   (emit "\e[2J\e[H")              ; clear, home
   (emit "\e[?25l"))               ; hide cursor
@@ -110,7 +123,8 @@
 (defn- draw [state]
   (emit "\e[H\e[J")             ; home + clear from cursor down
   (emit (box-frame (r/render state)))
-  (emit "\n"))
+  (emit "\n")
+  (php/fflush php/STDOUT))      ; ensure frame reaches the terminal now
 
 (defn- end? [state]
   (or (= (:mode state) :gameover)

@@ -1,0 +1,97 @@
+(ns phelgeon\content)
+
+;; =============================================================================
+;; Numeric tunables
+;; =============================================================================
+
+(def MAX-HP 100)
+(def START-ATTACK 10)
+(def START-DEFENSE 3)
+(def POTION-HEAL 30)
+(def REST-HEAL 20)
+(def ATTACK-JITTER 5)        ; player damage roll: attack ± this
+(def ENEMY-JITTER 3)         ; enemy damage roll: attack ± this
+(def CRIT-CHANCE 10)         ; out of 100
+(def CRIT-MULT 1.75)
+(def FLEE-CHANCE 50)         ; out of 100
+(def STAT-JITTER-PCT 20)     ; ±20% on enemy HP/ATK roll (integer percent)
+(def FLOOR-MULT [1.0 1.15 1.3])
+(def ROOMS-PER-FLOOR-MIN 6)
+(def ROOMS-PER-FLOOR-MAX 8)
+(def FINAL-FLOOR 3)
+(def MAX-LOG-LINES 3)
+(def HP-BAR-WIDTH 8)
+(def HEADER-WIDTH 60)
+
+;; =============================================================================
+;; Enemies
+;; =============================================================================
+
+(def ENEMY-POOL
+  [{:name "Goblin"    :hp 15 :attack 5}
+   {:name "Skeleton"  :hp 25 :attack 8}
+   {:name "Orc"       :hp 40 :attack 12}
+   {:name "Dark mage" :hp 20 :attack 15}])
+
+(def BOSS
+  {:name "Floor boss" :hp 80 :attack 18})
+
+;; =============================================================================
+;; Loot
+;; =============================================================================
+
+(def LOOT-POOL [:potion :sword :armor :gold])
+(def GOLD-MIN 5)
+(def GOLD-MAX 20)
+(def SWORD-BONUS 5)
+(def ARMOR-BONUS 3)
+
+;; =============================================================================
+;; Floor names — 3 per floor
+;; =============================================================================
+
+(def FLOOR-NAMES
+  [["The Goblin Warren" "Sunken Tunnels"   "Mossbone Hollow"]
+   ["Crypt of Bones"    "Whispering Halls" "The Black Vault"]
+   ["Throne of Cinders" "The Final Descent" "Emberkeep"]])
+
+;; =============================================================================
+;; Room descriptions — 4 per type
+;; =============================================================================
+
+(def DESCRIPTIONS
+  {:entrance
+   ["You stand at the threshold of the dungeon. Cold air seeps from the dark."
+    "A heavy stone arch marks the way in. Torches sputter in iron sconces."
+    "The mouth of the dungeon yawns before you, swallowing the daylight."
+    "Worn steps lead down. Somewhere below, water drips in slow rhythm."]
+
+   :combat
+   ["A damp cave tunnel stretches before you. Bones crunch underfoot."
+    "Rusted weapons litter the floor of this cramped chamber."
+    "A foul stench hangs in the air. Something is here, and it sees you."
+    "The walls are scratched with crude marks. You are not alone."]
+
+   :treasure
+   ["A glint of metal catches your eye in the corner of this dusty room."
+    "An old chest sits half-buried in rubble, its lid cracked open."
+    "Coins are scattered across the floor as if dropped in a hurry."
+    "Shelves line the walls, most empty — but one item still rests here."]
+
+   :rest
+   ["A quiet alcove with a small spring of cold water. A place to breathe."
+    "Soft moss carpets the floor. The air feels strangely calm."
+    "A circle of unlit candles surrounds a worn stone bench."
+    "Sunlight filters through a crack above, warming this still room."]
+
+   :exit
+   ["A spiral staircase winds down into deeper darkness."
+    "A heavy iron grate covers a shaft leading to the next level."
+    "The floor here is missing — a rough drop opens to the level below."
+    "Steps cut into the stone descend toward a faint, distant glow."]
+
+   :boss
+   ["The chamber is vast. At its centre, something massive stirs."
+    "A throne of bone dominates the room. Its occupant rises."
+    "The air burns. A figure wreathed in shadow blocks the way."
+    "You have reached the heart of the dungeon. It has been waiting."]})

@@ -1,6 +1,6 @@
 # phelgeon
 
-A procedural, turn-based dungeon crawler for the terminal — written in [Phel](https://phel-lang.org/) (a Lisp on PHP).
+A procedural, turn-based dungeon crawler for the terminal — written in [Phel](https://phel-lang.org/).
 
 Three floors. Procedurally generated rooms. Multi-enemy combat with abilities. Hidden traps. Named bosses with backstory. A single immutable game state flowing through pure functions.
 

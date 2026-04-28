@@ -1,7 +1,17 @@
 (ns phelgeon\main
   (:require phelgeon\core :as c)
-  (:require phelgeon\render :as r)
-  (:require phel-cli-gui\terminal-gui :as gui))
+  (:require phelgeon\render :as r))
+
+;; -----------------------------------------------------------------------------
+;; Raw ANSI terminal helpers (avoiding phel-cli-gui because its lazy init
+;; switches stdin to non-blocking mode, which breaks turn-based fgets reads).
+;; -----------------------------------------------------------------------------
+
+(defn- emit [s] (php/fwrite php/STDOUT s))
+
+(defn- clear-screen []  (emit "\e[2J\e[H"))
+(defn- hide-cursor  []  (emit "\e[?25l"))
+(defn- show-cursor  []  (emit "\e[?25h"))
 
 (defn- read-line []
   ;; Reads a line from stdin. Returns the string, or `:eof` if stdin closed.
@@ -11,8 +21,9 @@
       :else line)))
 
 (defn- draw [state]
-  (gui/clear-screen)
-  (gui/render-text-block 0 0 (r/render state)))
+  (clear-screen)
+  (emit (r/render state))
+  (emit "\n"))
 
 (defn- end? [state]
   (or (= (:mode state) :gameover)
@@ -30,13 +41,13 @@
         (recur (c/step state (c/parse-input raw (:mode state))))))))
 
 (defn main []
-  (gui/clear-screen)
-  (gui/hide-cursor)
-  (php/register_shutdown_function (fn [] (gui/show-cursor)))
+  (clear-screen)
+  (hide-cursor)
+  (php/register_shutdown_function (fn [] (show-cursor)))
   (let [final-state (game-loop (c/make-initial-state))]
     (read-line)
-    (gui/clear-screen)
-    (gui/show-cursor)
+    (clear-screen)
+    (show-cursor)
     :ok))
 
 (main)

@@ -219,6 +219,7 @@
      :log       []
      :mode      :intro                  ; show intro screen first
      :combat    nil
+     :from-dir  nil                     ; the direction back to where we came from
      :pending-descend false
      :pending-quit    false}))
 
@@ -231,6 +232,7 @@
         (assoc :rooms (:rooms g))
         (assoc :current :entrance)
         (assoc :visited #{:entrance})
+        (assoc :from-dir nil)            ; new floor — no back direction
         (assoc :pending-descend false)
         (log (str "You descend to floor " next-floor ": " (:floor-name g))))))
 
@@ -364,7 +366,7 @@
     (cond
       (:pending-descend state) state
       (nil? target) (log state "There is no exit that way.")
-      :else (enter-room state target))))
+      :else (enter-room (assoc state :from-dir (opposite dir)) target))))
 
 ;; =============================================================================
 ;; Combat damage

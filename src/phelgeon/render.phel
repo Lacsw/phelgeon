@@ -82,11 +82,14 @@
        "HP: " (hp-bar (:hp enemy) (:max-hp enemy))
        "  " (:hp enemy) "/" (:max-hp enemy)))
 
-(defn- exits-line [room]
+(defn- exits-line [room from-dir]
   (let [dirs (keys (:exits room))
-        names (for [d :in dirs] (name d))
-        joined (s/join ", " names)]
-    (cyan (str "Exits: " joined))))
+        formatted (for [d :in dirs]
+                    (if (= d from-dir)
+                      (str (cyan (name d)) " " (dim "(back)"))
+                      (cyan (name d))))
+        joined (s/join (cyan ", ") formatted)]
+    (str (cyan "Exits: ") joined)))
 
 (defn- log-block [log]
   (let [padded (concat log (repeat ct/MAX-LOG-LINES ""))
@@ -220,7 +223,7 @@
        (thin-divider)
        ""
        (player-line (:player state))
-       (exits-line room)
+       (exits-line room (:from-dir state))
        ""
        (thin-divider)
        ""

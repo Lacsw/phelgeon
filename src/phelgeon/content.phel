@@ -156,17 +156,14 @@
 (def INTRO-TITLE "PHELGEON")
 (def INTRO-SUBTITLE "a descent in three floors")
 
+;; Kept tight — a tall intro can't be scrolled back into view in alt-screen.
 (def INTRO-LORE
-  ["Three floors lie below. Older than memory, hungry as a closed fist."
-   "Each rearranges itself in the dark: tunnels that are never the same"
-   "twice, traps that learn your weight, treasures laid like flowers on"
-   "graves."
+  ["Three floors lie below. Older than memory, hungry as a fist."
+   "Each one rearranges in the dark: tunnels never the same twice,"
+   "traps that learn your weight, treasures laid like flowers on graves."
    ""
-   "At the bottom of the third floor waits a long-patient thing."
-   "Whoever it was once, it is something else now. You are not"
-   "the first to come down. The dungeon makes no promise you'll leave."
-   ""
-   "Light your torch. Find the stairs. Do not look behind you."])
+   "At the bottom waits a long-patient thing. The dungeon makes no"
+   "promise you'll leave. Light your torch. Find the stairs."])
 
 (def INTRO-CONTROLS
   ["EXPLORE     n s e w   move          i  inventory     q  quit"

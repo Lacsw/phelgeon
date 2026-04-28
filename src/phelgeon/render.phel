@@ -288,24 +288,17 @@
     (str (php/str_repeat " " pad) text)))
 
 (defn- intro-frame [_state]
+  ;; Compact: must fit in ~17 inner rows so the box is visible in small
+  ;; terminals (alt-screen can't be scrolled back to recover lost lines).
   (s/join "\n"
     (concat
-      [""
-       (bold-yellow (center ct/INTRO-TITLE))
+      [(bold-yellow (center ct/INTRO-TITLE))
        (dim (center ct/INTRO-SUBTITLE))
-       ""
-       (thin-divider)
        ""]
       ct/INTRO-LORE
-      [""
-       (thin-divider)
-       ""
-       (bold-white "CONTROLS")
-       ""]
+      [""]
       (for [l :in ct/INTRO-CONTROLS] (gray l))
       [""
-       (thin-divider)
-       ""
        (cyan "> Press any key to begin.")])))
 
 (defn- end-frame [state]

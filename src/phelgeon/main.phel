@@ -74,16 +74,34 @@
 ;; Input
 ;; -----------------------------------------------------------------------------
 
+;; Arrow keys, mouse-wheel scroll, and other terminal events arrive as
+;; multi-byte escape sequences (\e[A, \e[B, \e[<...M for SGR mouse, etc.).
+;; If we let those bytes flow through to parse-input, individual letters
+;; like 'A' or 'M' or '<' would be interpreted as game commands — that's
+;; what 'scroll changes the game' looks like.
+;;
+;; When we see ESC (0x1b), briefly drop stdin to non-blocking and drain the
+;; trailing bytes of the sequence, then return :skip so the game loop just
+;; redraws without dispatching a command.
+
+(defn- drain-escape-seq []
+  (php/stream_set_blocking php/STDIN false)
+  (loop [n 0]
+    (when (< n 32)
+      (let [b (php/fread php/STDIN 1)]
+        (when (and (string? b) (not= b ""))
+          (recur (inc n))))))
+  (php/stream_set_blocking php/STDIN true)
+  nil)
+
 (defn- read-key []
-  ;; Single byte from stdin. Returns the char string, or :eof on stdin close.
+  ;; Single byte from stdin. Returns the char string, :skip after draining
+  ;; an escape sequence, or :eof on stdin close.
   (let [c (php/fread php/STDIN 1)]
     (cond
       (or (= c false) (= c "")) :eof
-      :else c)))
-
-;; Note: arrow keys send a 3-byte sequence (\e[A etc.). We only read one byte
-;; at a time, so an arrow press becomes three :noop steps (one for \e, one for
-;; [, one for the letter). Acceptable; the box doesn't shift.
+      (= c "\e")                (do (drain-escape-seq) :skip)
+      :else                     c)))
 
 ;; -----------------------------------------------------------------------------
 ;; Game loop
@@ -106,8 +124,9 @@
     :else
     (let [raw (read-key)]
       (cond
-        (= raw :eof) (recur (assoc state :mode :quit))
-        :else        (recur (c/step state (c/parse-input raw (:mode state))))))))
+        (= raw :eof)  (recur (assoc state :mode :quit))
+        (= raw :skip) (recur state)        ; arrow / scroll / esc seq — ignore
+        :else         (recur (c/step state (c/parse-input raw (:mode state))))))))
 
 (defn main []
   (enter-game-mode)

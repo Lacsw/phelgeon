@@ -1,0 +1,9 @@
+/vendor/
+/out/
+/src/PhelGenerated/
+*.phar
+.phpunit.result.cache
+phel-config-local.php
+
+# superpowers brainstorming/plan artefacts — local notes only
+/docs/superpowers/

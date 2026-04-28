@@ -1,0 +1,22 @@
+{
+    "name": "phelgeon/phelgeon",
+    "description": "A roguelike dungeon crawler in the CLI, written in Phel",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/phel-lang/phel-lang"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "phel-lang/phel-lang": "dev-main as 0.34.x-dev",
+        "chemaclass/phel-cli-gui": "^0.9"
+    },
+    "scripts": {
+        "start": "phel run phelgeon\\\\main"
+    }
+}

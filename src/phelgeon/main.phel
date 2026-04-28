@@ -1,3 +1,40 @@
-(ns phelgeon\main)
+(ns phelgeon\main
+  (:require phelgeon\core :as c)
+  (:require phelgeon\render :as r)
+  (:require phel-cli-gui\terminal-gui :as gui))
 
-(defn main [] nil)
+(defn- read-line []
+  ;; Reads a line from stdin; returns "" on EOF.
+  (let [line (php/fgets php/STDIN)]
+    (if (or (= line false) (nil? line)) "" line)))
+
+(defn- draw [state]
+  (gui/clear-screen)
+  (gui/render-text-block 0 0 (r/render state)))
+
+(defn- end? [state]
+  (or (= (:mode state) :gameover)
+      (= (:mode state) :victory)
+      (= (:mode state) :quit)))
+
+(defn- game-loop [state]
+  (draw state)
+  (cond
+    (end? state) state
+    :else
+    (let [raw (read-line)
+          cmd (c/parse-input raw (:mode state))
+          next-state (c/step state cmd)]
+      (recur next-state))))
+
+(defn main []
+  (gui/clear-screen)
+  (gui/hide-cursor)
+  (php/register_shutdown_function (fn [] (gui/show-cursor)))
+  (let [final-state (game-loop (c/make-initial-state))]
+    (read-line)
+    (gui/clear-screen)
+    (gui/show-cursor)
+    :ok))
+
+(main)

@@ -1,0 +1,218 @@
+(ns phelgeon\render
+  (:require phel\string :as s)
+  (:require phelgeon\content :as ct))
+
+;; =============================================================================
+;; ANSI helpers (16-colour)
+;; =============================================================================
+
+(defn- ansi [code s] (str "\e[" code "m" s "\e[0m"))
+
+(defn- bold   [s] (ansi "1"    s))
+(defn- dim    [s] (ansi "2"    s))
+(defn- red    [s] (ansi "31"   s))
+(defn- green  [s] (ansi "32"   s))
+(defn- yellow [s] (ansi "33"   s))
+(defn- cyan   [s] (ansi "36"   s))
+(defn- gray   [s] (ansi "2;37" s))
+(defn- bold-red    [s] (ansi "1;31" s))
+(defn- bold-green  [s] (ansi "1;32" s))
+(defn- bold-yellow [s] (ansi "1;33" s))
+(defn- bold-white  [s] (ansi "1;37" s))
+
+(defn- hint
+  "Render `[x]` with the bracketed letter highlighted."
+  [letter rest]
+  (str (bold-yellow (str "[" letter "]")) rest))
+
+;; =============================================================================
+;; HP bar
+;; =============================================================================
+
+(defn- bar-color [ratio s]
+  (cond
+    (> ratio 0.6) (green s)
+    (> ratio 0.3) (yellow s)
+    :else         (red s)))
+
+(defn- repeat-str [s n]
+  (apply str (for [_ :range [0 n]] s)))
+
+(defn hp-bar [hp max-hp]
+  (let [w ct/HP-BAR-WIDTH
+        ratio (if (<= max-hp 0) 0 (max 0 (min 1 (/ hp max-hp))))
+        filled (php/intval (* w ratio))
+        empty-cells (- w filled)
+        full (bar-color ratio (repeat-str "█" filled))
+        rest (dim (repeat-str "░" empty-cells))]
+    (str full rest)))
+
+;; =============================================================================
+;; Frame parts
+;; =============================================================================
+
+(defn- divider []
+  (repeat-str "━" ct/HEADER-WIDTH))
+
+(defn- header [floor floor-name]
+  (str (bold-white (str "[Floor " floor "]  " floor-name)) "\n" (divider)))
+
+(defn- player-line [player]
+  (str "YOU     HP: " (hp-bar (:hp player) (:max-hp player))
+       "  " (:hp player) "/" (:max-hp player)))
+
+(defn- enemy-line [enemy]
+  (let [name (s/upper-case (:name enemy))]
+    (str (apply str (concat name (repeat (max 1 (- 8 (count name))) " ")))
+         "HP: " (hp-bar (:hp enemy) (:max-hp enemy))
+         "  " (:hp enemy) "/" (:max-hp enemy))))
+
+(defn- exits-line [room]
+  (let [dirs (keys (:exits room))
+        names (for [d :in dirs] (name d))
+        joined (s/join ", " names)]
+    (cyan (str "Exits: " joined))))
+
+(defn- log-block [log]
+  (let [padded (concat log (repeat ct/MAX-LOG-LINES ""))
+        three (take ct/MAX-LOG-LINES padded)]
+    (s/join "\n"
+      (for [m :in three]
+        (if (s/blank? m) "" (gray (str "― " m)))))))
+
+(defn- presence-line [room]
+  (case (:type room)
+    :combat   (red "Something hostile lurks here.")
+    :boss     (bold-red "A terrible presence fills the room.")
+    :treasure (yellow "Something gleams in the dim light.")
+    :rest     (green "A calm refuge.")
+    :exit     (cyan "A way down.")
+    nil))
+
+;; =============================================================================
+;; Mode-specific prompts
+;; =============================================================================
+
+(defn- explore-prompt [state]
+  (let [room (get (:rooms state) (:current state))
+        dir-keys (keys (:exits room))
+        dir-hints (for [d :in dir-keys]
+                    (case d
+                      :north (hint "n" "orth")
+                      :south (hint "s" "outh")
+                      :east  (hint "e" "ast")
+                      :west  (hint "w" "est")
+                      ""))
+        inv-hint (if (zero? (count (:inventory (:player state)))) ""
+                                                                   (str "  " (hint "i" "nventory")))]
+    (str "> " (s/join "  " dir-hints) inv-hint "  " (hint "q" "uit"))))
+
+(defn- descend-prompt []
+  (str "> " (hint "y" "es descend") "  " (hint "n" "o stay")))
+
+(defn- combat-prompt [state]
+  (let [has-potion (some (fn [i] (= i :potion)) (:inventory (:player state)))
+        u (if has-potion (str "  " (hint "u" "se potion")) "")]
+    (str "> " (hint "a" "ttack") "  " (hint "f" "lee") u)))
+
+(defn- inventory-prompt [state]
+  (let [potions (filter (fn [i] (= i :potion)) (:inventory (:player state)))
+        n (count potions)]
+    (if (zero? n)
+      (str "> " (hint "b" "ack") "  (no items)")
+      (str "> " (hint "1" (str "..." n " use potion")) "  " (hint "b" "ack")))))
+
+(defn- end-prompt []
+  "> Press enter to exit.")
+
+;; =============================================================================
+;; Frame builders
+;; =============================================================================
+
+(defn- explore-frame [state]
+  (let [room (get (:rooms state) (:current state))
+        cleared? (:cleared room)
+        desc (:description room)
+        presence (when (not cleared?) (presence-line room))
+        empty-tag (when (and cleared? (#{:combat :boss :treasure :rest} (:type room)))
+                    (gray "(empty)"))
+        body (s/join "\n" (filter some? [desc presence empty-tag]))
+        prompt (if (:pending-descend state) (descend-prompt) (explore-prompt state))]
+    (s/join "\n"
+      [(header (:floor state) (:floor-name state))
+       ""
+       body
+       ""
+       (player-line (:player state))
+       ""
+       (exits-line room)
+       ""
+       prompt
+       ""
+       (log-block (:log state))])))
+
+(defn- combat-frame [state]
+  (let [room (get (:rooms state) (:current state))
+        enemy (get-in state [:combat :enemy])]
+    (s/join "\n"
+      [(header (:floor state) (:floor-name state))
+       ""
+       (:description room)
+       (red (str "A " (:name enemy) " stands ready."))
+       ""
+       (enemy-line enemy)
+       (player-line (:player state))
+       ""
+       (combat-prompt state)
+       ""
+       (log-block (:log state))])))
+
+(defn- inventory-frame [state]
+  (let [potions (filter (fn [i] (= i :potion)) (:inventory (:player state)))
+        n (count potions)]
+    (s/join "\n"
+      [(header (:floor state) (:floor-name state))
+       ""
+       (bold-white "Inventory")
+       (divider)
+       (if (zero? n)
+         (gray "(empty)")
+         (str "1. Health potion ×" n))
+       ""
+       (player-line (:player state))
+       ""
+       (inventory-prompt state)
+       ""
+       (log-block (:log state))])))
+
+(defn- end-frame [state]
+  (let [banner (case (:mode state)
+                 :gameover (bold-red    "                    YOU DIED")
+                 :victory  (bold-green  "                    VICTORY")
+                 :quit     (bold-white  "                    Goodbye.")
+                 "")
+        p (:player state)
+        stats [(str "Floors descended ........  " (:floor state))
+               (str "Gold collected ..........  " (:gold p))
+               (str "Enemies slain ...........  " (:kills p))
+               (str "Biggest hit .............  " (:biggest-hit p))
+               (str "Potions used ............  " (:potions-used p))]]
+    (s/join "\n"
+      (concat
+        ["" banner (divider) ""]
+        stats
+        ["" (end-prompt)]))))
+
+;; =============================================================================
+;; Public entrypoint
+;; =============================================================================
+
+(defn render [state]
+  (case (:mode state)
+    :explore   (explore-frame state)
+    :combat    (combat-frame state)
+    :inventory (inventory-frame state)
+    :gameover  (end-frame state)
+    :victory   (end-frame state)
+    :quit      (end-frame state)
+    ""))

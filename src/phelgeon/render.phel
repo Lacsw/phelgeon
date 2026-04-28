@@ -138,8 +138,9 @@
             (red (str "   " line)))))
 
       (= n 1)
-      (red (str (article (:name first-e)) " " (:name first-e)
-                " — " (:lore first-e) " — stands ready."))
+      (s/join "\n"
+        [(red (str (article (:name first-e)) " " (:name first-e) " stands ready."))
+         (red (str "   " (:lore first-e) "."))])
 
       :else
       (s/join "\n"
@@ -313,6 +314,7 @@
                  :victory  (bold-green  "                    VICTORY")
                  :quit     (bold-white  "                    Goodbye.")
                  "")
+        flavor (get ct/END-FLAVOR (:mode state))
         p (:player state)
         stats [(str "Floors descended ........  " (:floor state))
                (str "Gold collected ..........  " (:gold p))
@@ -322,6 +324,7 @@
     (s/join "\n"
       (concat
         ["" banner (divider) ""]
+        (if flavor [(dim flavor) ""] [])
         stats
         ["" (end-prompt)]))))
 

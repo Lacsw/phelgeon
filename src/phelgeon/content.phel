@@ -21,72 +21,68 @@
 (def FINAL-FLOOR 3)
 (def MAX-LOG-LINES 3)
 (def HP-BAR-WIDTH 8)
-(def HEADER-WIDTH 68)        ; divider width inside the box
-(def CONTENT-WIDTH 68)       ; usable text width inside the box
-(def WRAP-WIDTH 68)          ; word-wrap width for descriptions
+(def HEADER-WIDTH 68)
+(def CONTENT-WIDTH 68)
+(def WRAP-WIDTH 68)
 
 ;; =============================================================================
 ;; Combat
 ;; =============================================================================
 
-(def ABILITY-CHANCE 30)      ; out of 100; chance enemy ability fires per turn
-(def CASTER-DAMAGE 12)       ; fixed damage for :caster ability
-(def TWO-ENEMY-CHANCE 40)    ; out of 100; chance combat room has 2 enemies
+(def ABILITY-CHANCE 30)
+(def CASTER-DAMAGE 12)
+(def TWO-ENEMY-CHANCE 40)
 
-;; Enemies. Each carries:
-;;   :name    short label shown in HP bars / kill log
-;;   :hp/:attack base stats (jittered + scaled per floor)
-;;   :ability  combat trait:
-;;     :none    — vanilla
-;;     :tough   — when hit, 30% chance to halve incoming damage
-;;     :fury    — 30% chance per attack to deal double damage
-;;     :caster  — every attack does fixed CASTER-DAMAGE, ignoring jitter
-;;     :phase   — every attack ignores the player's defense
-;;   :lore    a short flavour clause shown when combat starts
+;; Enemy abilities:
+;;   :none    — vanilla
+;;   :tough   — when hit, 30% chance to halve incoming damage
+;;   :fury    — 30% chance per attack to deal double damage
+;;   :caster  — every attack does fixed CASTER-DAMAGE, ignoring jitter
+;;   :phase   — every attack ignores the player's defense
 (def ENEMY-POOL
   [{:name "Goblin"    :hp 15 :attack 5  :ability :none
-    :lore "small, mean, and famished"}
+    :lore "small, mean, and patient with hunger"}
    {:name "Skeleton"  :hp 25 :attack 8  :ability :tough
-    :lore "ancient bones bound by an older grudge"}
+    :lore "old bones bound by an older grudge"}
    {:name "Orc"       :hp 40 :attack 12 :ability :fury
-    :lore "scarred, snarling, all muscle"}
+    :lore "all muscle and scar tissue, smelling of old kills"}
    {:name "Dark mage" :hp 20 :attack 15 :ability :caster
     :lore "robed in tattered finery, eyes lit with cold fire"}
    {:name "Cave rat"  :hp 8  :attack 4  :ability :none
-    :lore "twitching whiskers and yellow teeth"}
+    :lore "lean and yellow-toothed, eyes like wet stones"}
    {:name "Wraith"    :hp 30 :attack 10 :ability :phase
-    :lore "barely visible, all teeth and chill"}])
+    :lore "a held breath given shape, all teeth and chill"}])
 
-;; Floor-3 boss is randomly chosen from this set each run for replay variety.
-;; Each one has its own legend; stats are similar so the difficulty curve is stable.
-;; Lore is pre-split into ≤62-char lines; render emits each on its own line.
+;; Floor-3 boss: randomly chosen for replay variety. Each has a legend.
 (def BOSSES
   [{:name "Skarn" :title "the Bone-Crowned"
     :hp 80 :attack 18 :ability :fury
-    :lore ["Crowned in the bones of his own kin. The smaller goblins"
-           "call him 'father' — and run when they see his shadow."]}
+    :lore ["Crowned in the bones of his own kin and his own grudges."
+           "The smaller goblins call him 'father' — and they run."]}
    {:name "Mother Rust" :title "the Iron Wyrm"
     :hp 80 :attack 18 :ability :tough
-    :lore ["An ancient skeletal wyrm coiled deep in these tunnels."
-           "They say she died centuries ago — no one ever told her."]}
+    :lore ["An iron wyrm coiled in the dark since the dark was young."
+           "They say she died long ago. No one ever told her."]}
    {:name "Cinderking" :title "last lord of ash"
     :hp 80 :attack 18 :ability :fury
-    :lore ["Once a ruler of these halls. Now a smouldering wraith"
-           "on a throne of charred bones. He waits for everyone."]}])
+    :lore ["Once a king of warm halls. Now a coal still remembering fire."
+           "His throne is bone, his patience ash, his welcome final."]}])
 
 ;; =============================================================================
-;; Traps
+;; Traps — six flavoured kicks, picked randomly when one fires.
 ;; =============================================================================
 
-(def TRAP-CHANCE 18)         ; out of 100, on combat/treasure/exit rooms
+(def TRAP-CHANCE 18)
 (def TRAP-DAMAGE-MIN 5)
 (def TRAP-DAMAGE-MAX 14)
 
 (def TRAP-MESSAGES
-  ["A spike trap snaps shut! You take {N} damage."
-   "A pressure plate clicks. Darts fly out — {N} damage."
-   "A loose stone gives way and you tumble — {N} damage."
-   "Acid sprays from a hidden vent — {N} damage."])
+  ["Spikes leap from the floor like hungry teeth — {N} damage."
+   "A pressure plate sighs, and the air fills with darts — {N} damage."
+   "The stone crumbles beneath you. You catch yourself, just — {N} damage."
+   "Acid mists from a hidden vent and finds skin — {N} damage."
+   "A wire whispers behind you. Something cold passes through — {N} damage."
+   "Old runes wake at your step, and bite — {N} damage."])
 
 ;; =============================================================================
 ;; Loot pool (weighted by repetition)
@@ -104,13 +100,54 @@
 (def ARMOR-BONUS 3)
 
 ;; =============================================================================
-;; Floor names — 3 per floor
+;; Floor names
 ;; =============================================================================
 
 (def FLOOR-NAMES
-  [["The Goblin Warren" "Sunken Tunnels"   "Mossbone Hollow"]
-   ["Crypt of Bones"    "Whispering Halls" "The Black Vault"]
-   ["Throne of Cinders" "The Final Descent" "Emberkeep"]])
+  [["The Goblin Warren" "Mossbone Hollow"     "The Drowning Stair"]
+   ["Crypt of Quiet Bones" "Whispering Halls" "The Lichgate"]
+   ["Throne of Cinders" "The Last Furnace"    "Emberkeep"]])
+
+;; =============================================================================
+;; Room descriptions — 4 per type, more atmospheric than functional
+;; =============================================================================
+
+(def DESCRIPTIONS
+  {:entrance
+   ["You stand at the threshold. Cold breath rises from below, smelling of iron and old paper."
+    "A heavy stone arch swallows the daylight. Torches sputter green against the long dark."
+    "Worn steps spiral down into hush. Somewhere far below, water counts seconds."
+    "The dungeon opens like an old wound. Whatever it has eaten, it has not forgotten."]
+
+   :combat
+   ["A damp tunnel. Lichen sketches old maps on the walls. Bones lie in patient drifts."
+    "Rusted weapons sleep in the floor. Someone tried, and they tried hard."
+    "The stone bears tally marks — a great many. None of them yours. Yet."
+    "A foul stillness, like a held breath. Eyes catch your torch and do not look away."]
+
+   :treasure
+   ["A glint of silver in the dust. Whoever left it isn't coming back."
+    "An old chest, half-buried in rubble. Its lock has long since given up."
+    "Coins scattered as if dropped in flight. The flight ended elsewhere."
+    "Empty shelves, and one stubborn keepsake still watching for an owner."]
+
+   :rest
+   ["A quiet alcove. A small spring whispers cold prayers to no one."
+    "Soft moss carpets the stone. The air holds itself like a kindness."
+    "An unlit ring of candles surrounds a worn bench. Someone sat here once."
+    "Sunlight finds a crack overhead and warms this small, still place."]
+
+   :exit
+   ["A spiral stair winds down into deeper dark."
+    "An iron grate yawns over a shaft to the level below."
+    "The floor is gone here — a rough drop, and a wind rises to meet you."
+    "Steps cut into the rock descend toward a faint, distant glow."]
+
+   :boss
+   ["A vast chamber. Something massive shifts at its centre, and the dust flees."
+    "A throne of bone. Its occupant rises with the long patience of something owed."
+    "The air burns. A figure of shadow stands between you and the way home."
+    "You have reached the heart of it. The heart has been waiting."]})
 
 ;; =============================================================================
 ;; Intro screen — shown once at game start
@@ -120,15 +157,16 @@
 (def INTRO-SUBTITLE "a descent in three floors")
 
 (def INTRO-LORE
-  ["Three floors lie below — older than memory, hungry as ever."
-   "Each one rearranges itself with every descent: goblins in the"
-   "shadows, traps in the floors, treasures buried in old dust."
+  ["Three floors lie below. Older than memory, hungry as a closed fist."
+   "Each rearranges itself in the dark: tunnels that are never the same"
+   "twice, traps that learn your weight, treasures laid like flowers on"
+   "graves."
    ""
-   "At the bottom of the third floor sits a thing that has waited"
-   "a long time. Whoever it was once, it is something else now."
-   "You are not the first to come down. You may not be the last."
+   "At the bottom of the third floor waits a long-patient thing."
+   "Whoever it was once, it is something else now. You are not"
+   "the first to come down. The dungeon makes no promise you'll leave."
    ""
-   "Find the stairs. Survive what's between. Strike true at the throne."])
+   "Light your torch. Find the stairs. Do not look behind you."])
 
 (def INTRO-CONTROLS
   ["EXPLORE     n s e w   move          i  inventory     q  quit"
@@ -136,42 +174,10 @@
    "INVENTORY   1 potion   2  heal       b  back"])
 
 ;; =============================================================================
-;; Room descriptions — 4 per type
+;; End-of-run flavour — one line, shown above the stats summary
 ;; =============================================================================
 
-(def DESCRIPTIONS
-  {:entrance
-   ["You stand at the threshold of the dungeon. Cold air seeps from the dark."
-    "A heavy stone arch marks the way in. Torches sputter in iron sconces."
-    "The mouth of the dungeon yawns before you, swallowing the daylight."
-    "Worn steps lead down. Somewhere below, water drips in slow rhythm."]
-
-   :combat
-   ["A damp cave tunnel stretches before you. Bones crunch underfoot."
-    "Rusted weapons litter the floor of this cramped chamber."
-    "A foul stench hangs in the air. Something is here, and it sees you."
-    "The walls are scratched with crude marks. You are not alone."]
-
-   :treasure
-   ["A glint of metal catches your eye in the corner of this dusty room."
-    "An old chest sits half-buried in rubble, its lid cracked open."
-    "Coins are scattered across the floor as if dropped in a hurry."
-    "Shelves line the walls, most empty — but one item still rests here."]
-
-   :rest
-   ["A quiet alcove with a small spring of cold water. A place to breathe."
-    "Soft moss carpets the floor. The air feels strangely calm."
-    "A circle of unlit candles surrounds a worn stone bench."
-    "Sunlight filters through a crack above, warming this still room."]
-
-   :exit
-   ["A spiral staircase winds down into deeper darkness."
-    "A heavy iron grate covers a shaft leading to the next level."
-    "The floor here is missing — a rough drop opens to the level below."
-    "Steps cut into the stone descend toward a faint, distant glow."]
-
-   :boss
-   ["The chamber is vast. At its centre, something massive stirs."
-    "A throne of bone dominates the room. Its occupant rises."
-    "The air burns. A figure wreathed in shadow blocks the way."
-    "You have reached the heart of the dungeon. It has been waiting."]})
+(def END-FLAVOR
+  {:victory  "The throne is still. The dungeon, for now, is yours."
+   :gameover "The dark closes over you, soft as a familiar voice."
+   :quit     "You climb back up. The world is brighter than you remembered."})

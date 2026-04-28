@@ -219,7 +219,8 @@
      :log       []
      :mode      :explore
      :combat    nil
-     :pending-descend false}))
+     :pending-descend false
+     :pending-quit    false}))
 
 (defn- descend [state]
   (let [next-floor (inc (:floor state))
@@ -547,10 +548,19 @@
     (cond
       (:pending-descend state)
       (case cmd
-        :yes  (descend state)
+        :yes   (descend state)
         :north (assoc state :pending-descend false)   ; "n" doubles as "no"
         :noop  state
         state)
+
+      (:pending-quit state)
+      (case cmd
+        :yes   (assoc state :mode :quit)
+        :north (assoc state :pending-quit false)      ; "n" = no
+        :quit  (assoc state :pending-quit false)      ; second "q" = cancel
+        :noop  state
+        state)
+
       :else
       (case cmd
         :north (try-move state :north)
@@ -558,7 +568,7 @@
         :east  (try-move state :east)
         :west  (try-move state :west)
         :inventory (assoc state :mode :inventory)
-        :quit  (assoc state :mode :quit)
+        :quit  (assoc state :pending-quit true)        ; ask before quitting
         :noop  state
         state))
 

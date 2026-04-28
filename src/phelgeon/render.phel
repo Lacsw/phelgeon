@@ -168,6 +168,9 @@
 (defn- descend-prompt []
   (str "> " (hint "y" "es descend") "  " (hint "n" "o stay")))
 
+(defn- quit-prompt []
+  (str "> " (yellow "Quit and end your run?") "  " (hint "y" "es") "  " (hint "n" "o")))
+
 (defn- combat-prompt [state]
   (let [inv (:inventory (:player state))
         has-potion (some (fn [i] (= i :potion)) inv)
@@ -205,7 +208,10 @@
         empty-tag (when (and cleared? (#{:combat :boss :treasure :rest} (:type room)))
                     (gray "(empty)"))
         body (s/join "\n" (filter some? [desc presence empty-tag]))
-        prompt (if (:pending-descend state) (descend-prompt) (explore-prompt state))]
+        prompt (cond
+                 (:pending-descend state) (descend-prompt)
+                 (:pending-quit state)    (quit-prompt)
+                 :else                    (explore-prompt state))]
     (s/join "\n"
       [(header (:floor state) (:floor-name state))
        ""

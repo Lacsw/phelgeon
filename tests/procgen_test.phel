@@ -1,0 +1,77 @@
+(ns tests\procgen-test
+  (:require phel\test :refer [deftest is])
+  (:require phelgeon\core :as core)
+  (:require phelgeon\content :as ct))
+
+(defn- bfs-reachable
+  "Return the set of room ids reachable from `start` over `:exits`."
+  [rooms start]
+  (loop [visited #{} frontier [start]]
+    (if (zero? (count frontier))
+      visited
+      (let [r-id (get frontier 0)
+            rest (vec (drop 1 frontier))]
+        (if (contains? visited r-id)
+          (recur visited rest)
+          (let [room (get rooms r-id)
+                neighbors (vec (vals (:exits room)))
+                v2 (conj visited r-id)
+                new (vec (filter (fn [n] (not (contains? v2 n))) neighbors))]
+            (recur v2 (vec (concat rest new)))))))))
+
+(defn- run-many [n f]
+  (for [i :range [0 n]] (f i)))
+
+(deftest gen-floor-every-room-reachable
+  (let [results (run-many 50
+                  (fn [_]
+                    (let [g (core/gen-floor 1)
+                          rooms (:rooms g)
+                          reachable (bfs-reachable rooms :entrance)]
+                      (= (count reachable) (count rooms)))))]
+    (is (every? identity results) "Every room reachable from entrance, 50 seeds.")))
+
+(deftest gen-floor-exits-bidirectional
+  (let [results (run-many 50
+                  (fn [_]
+                    (let [g (core/gen-floor 1)
+                          rooms (:rooms g)]
+                      (every? identity
+                              (for [[id room] :pairs rooms
+                                    [dir target] :pairs (:exits room)]
+                                (= id (get-in rooms [target :exits
+                                                     ;; opposite direction
+                                                     (case dir
+                                                       :north :south
+                                                       :south :north
+                                                       :east :west
+                                                       :west :east)])))))))]
+    (is (every? identity results))))
+
+(deftest gen-floor-non-final-has-exit-room
+  (let [g (core/gen-floor 1)
+        types (vec (for [[_ r] :pairs (:rooms g)] (:type r)))]
+    (is (some (fn [t] (= t :exit)) types))
+    (is (not-any? (fn [t] (= t :boss)) types))))
+
+(deftest gen-floor-final-has-boss-not-exit
+  (let [g (core/gen-floor ct/FINAL-FLOOR)
+        types (vec (for [[_ r] :pairs (:rooms g)] (:type r)))]
+    (is (some (fn [t] (= t :boss)) types))
+    (is (not-any? (fn [t] (= t :exit)) types))))
+
+(deftest gen-floor-room-count-in-range
+  (let [results (run-many 30
+                  (fn [_]
+                    (let [g (core/gen-floor 1)
+                          n (count (:rooms g))]
+                      (and (>= n ct/ROOMS-PER-FLOOR-MIN)
+                           (<= n ct/ROOMS-PER-FLOOR-MAX)))))]
+    (is (every? identity results))))
+
+(deftest gen-floor-entrance-has-no-enemies
+  (let [g (core/gen-floor 1)
+        entrance (get (:rooms g) :entrance)]
+    (is (= :entrance (:type entrance)))
+    (is (or (nil? (:enemies entrance))
+            (zero? (count (:enemies entrance)))))))

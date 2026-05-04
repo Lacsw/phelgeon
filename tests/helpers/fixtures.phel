@@ -1,0 +1,68 @@
+(ns tests\helpers\fixtures)
+
+;; Hand-crafted states — bypass procgen so combat/explore/inventory tests
+;; have a known room graph. Keys mirror what (make-initial-state) returns.
+
+(defn weak-goblin
+  "Enemy with hp 1 — any positive damage kills it."
+  []
+  {:name "goblin" :hp 1 :max-hp 1 :attack 1 :ability nil :lore ""})
+
+(defn brute
+  "Enemy with very high attack — guaranteed to one-shot a low-hp player."
+  []
+  {:name "brute" :hp 99 :max-hp 99 :attack 99 :ability nil :lore ""})
+
+(defn fresh-player
+  "Player at full hp, no items."
+  []
+  {:hp 30 :max-hp 30 :attack 5 :defense 1
+   :inventory [] :gold 0
+   :kills 0 :biggest-hit 0 :potions-used 0})
+
+(defn three-room-map
+  "Linear graph: entrance — combat-room — exit."
+  []
+  {:entrance    {:id :entrance :type :entrance
+                 :exits {:north :combat-room}
+                 :description "entrance" :cleared true :trap false}
+   :combat-room {:id :combat-room :type :combat
+                 :exits {:south :entrance :north :exit}
+                 :description "combat" :cleared true :trap false
+                 :enemies []}
+   :exit        {:id :exit :type :exit
+                 :exits {:south :combat-room}
+                 :description "exit" :cleared false :trap false}})
+
+(defn explore-state
+  "Player in the entrance of a 3-room map, mode :explore."
+  []
+  {:player (fresh-player)
+   :floor 1
+   :floor-name "Test Floor"
+   :rooms (three-room-map)
+   :current :entrance
+   :visited #{:entrance}
+   :log []
+   :mode :explore
+   :combat nil
+   :from-dir nil
+   :pending-descend false
+   :pending-quit false})
+
+(defn combat-state
+  "Player in :combat mode against the given enemies, in :combat-room.
+   Sets :cleared false so post-victory assertions are meaningful."
+  [enemies]
+  (-> (explore-state)
+      (assoc :current :combat-room)
+      (assoc :mode :combat)
+      (assoc :combat {:enemies enemies})
+      (assoc-in [:rooms :combat-room :cleared] false)))
+
+(defn with-potion
+  "Add `n` potions to player inventory."
+  [state n]
+  (let [inv (get-in state [:player :inventory])
+        inv2 (vec (concat inv (for [_ :range [0 n]] :potion)))]
+    (assoc-in state [:player :inventory] inv2)))

@@ -1,6 +1,8 @@
 (ns tests\core-test
   (:require phel\test :refer [deftest is])
-  (:require phelgeon\core :as core))
+  (:require phelgeon\core :as core)
+  (:require tests\helpers\fixtures :as f)
+  (:require phelgeon\content :as ct))
 
 (deftest parse-input-explore-directions
   (is (= :north (core/parse-input "n" :explore)))
@@ -47,3 +49,18 @@
   ;; Actual first char is the ESC byte. Either way the result must be :noop, not a stray command.
   (is (= :noop (core/parse-input "\e[A" :explore)))
   (is (= :noop (core/parse-input "\e[B" :combat))))
+
+(deftest log-stays-bounded
+  ;; Drive many "no exit" log entries and assert log never exceeds MAX-LOG-LINES.
+  (let [s0 (f/explore-state)
+        ;; The :entrance has only :north exit, so :south/:east/:west all log "no exit"
+        steps [:south :east :west :south :east :west :south :east :west :south]
+        final (reduce (fn [s cmd] (core/step s cmd)) s0 steps)]
+    (is (<= (count (:log final)) ct/MAX-LOG-LINES))
+    (is (> (count (:log final)) 0))))
+
+(deftest log-empty-does-not-crash
+  ;; Fresh state has empty log; first failing move appends one line, no crash.
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :south)]
+    (is (= 1 (count (:log s1))))))

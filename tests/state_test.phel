@@ -1,6 +1,7 @@
 (ns tests\state-test
   (:require phel\test :refer [deftest is])
   (:require phelgeon\core :as core)
+  (:require phelgeon\content :as ct)
   (:require tests\helpers\fixtures :as f))
 
 (defn- play
@@ -24,19 +25,19 @@
     (is (= :combat-room (:current s-final)))))
 
 (deftest gameover-locks-state-from-mutating-mode
-  ;; Once :gameover, combat/explore commands shouldn't move the player again.
+  ;; Once :gameover, NO command should mutate state — it's an absorbing terminal.
   (let [s0 (-> (f/combat-state [(f/brute)])
                (assoc-in [:player :hp] 1))
-        s1 (core/step s0 :attack) ; player dies
+        s1 (core/step s0 :attack)        ; player dies
         s2 (core/step s1 :attack)
         s3 (core/step s2 :north)]
     (is (= :gameover (:mode s1)))
-    (is (= :gameover (:mode s2)))
-    (is (= :gameover (:mode s3)))))
+    (is (= s1 s2) "Post-gameover :attack must not mutate state.")
+    (is (= s1 s3) "Post-gameover :north must not mutate state.")))
 
 (deftest log-stays-bounded-across-long-run
-  ;; 15 invalid moves; log must still be capped.
+  ;; 15 invalid moves; log must still be capped at MAX-LOG-LINES.
   (let [s0 (f/explore-state)
         cmds (vec (for [_ :range [0 15]] :south))
         s-final (play s0 cmds)]
-    (is (<= (count (:log s-final)) 3))))
+    (is (<= (count (:log s-final)) ct/MAX-LOG-LINES))))

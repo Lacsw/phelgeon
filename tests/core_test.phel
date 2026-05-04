@@ -204,29 +204,32 @@
     (is (= :explore (:mode s1)))))
 
 (deftest move-into-rest-room-heals-and-clears
+  ;; REST-HEAL=20, hp 10, max-hp 30 -> exact 30 (capped). Tightened from <= 30.
   (let [s0 (-> (f/explore-state-with-room (f/rest-room))
                (assoc-in [:player :hp] 10))
         s1 (core/step s0 :north)]
-    (is (> (get-in s1 [:player :hp]) 10))
-    (is (<= (get-in s1 [:player :hp]) 30))
+    (is (= 30 (get-in s1 [:player :hp])) "Heal lands on min(max-hp, hp+REST-HEAL).")
     (is (:cleared (get-in s1 [:rooms :rest-room])))))
 
 (deftest move-into-exit-sets-pending-descend
-  (let [s0 (f/explore-state)
-        ;; Walk north into combat-room (already cleared in default fixture),
-        ;; then north again into exit.
-        s1 (core/step s0 :north)
-        s2 (core/step s1 :north)]
-    (is (:pending-descend s2))))
+  ;; Use a dedicated exit-room fixture so the test doesn't depend on
+  ;; the default three-room-map's :combat-room :cleared flag.
+  (let [s0 (f/explore-state-with-room (f/exit-room))
+        s1 (core/step s0 :north)]
+    (is (:pending-descend s1))))
 
 (deftest descend-confirm-advances-floor
   (let [s0 (-> (f/explore-state)
                (assoc :pending-descend true)
-               (assoc :floor 1))
+               (assoc :floor 1)
+               (assoc :from-dir :south)
+               (update :visited conj :combat-room))
         s1 (core/step s0 :yes)]
     (is (= 2 (:floor s1)))
     (is (not (:pending-descend s1)))
-    (is (= :entrance (:current s1)))))
+    (is (= :entrance (:current s1)))
+    (is (= #{:entrance} (:visited s1)) ":visited reset to entrance only.")
+    (is (nil? (:from-dir s1)) ":from-dir cleared on new floor.")))
 
 (deftest descend-cancel-with-north-clears-pending
   (let [s0 (-> (f/explore-state)
@@ -247,3 +250,11 @@
         s1 (core/step s0 :quit)
         s2 (core/step s1 :quit)]
     (is (not (:pending-quit s2)))))
+
+(deftest quit-cancel-with-north-clears-pending
+  ;; Parallel to descend-cancel-with-north — :north doubles as "no" when pending-quit.
+  (let [s0 (-> (f/explore-state)
+               (assoc :pending-quit true))
+        s1 (core/step s0 :north)]
+    (is (not (:pending-quit s1)))
+    (is (= :explore (:mode s1)))))

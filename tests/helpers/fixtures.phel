@@ -94,3 +94,11 @@
                                  (dissoc :combat-room :exit)
                                  (assoc (:id room) room))]
     (assoc base :rooms rooms-without-combat)))
+
+(defn exit-room
+  "A stairs-down room. Used to test :pending-descend without depending
+   on the default three-room-map's :combat-room :cleared default."
+  []
+  {:id :exit-room :type :exit
+   :exits {:south :entrance}
+   :description "exit" :cleared false :trap false})

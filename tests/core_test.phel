@@ -1,0 +1,9 @@
+(ns tests\core-test
+  (:require phel\test :refer [deftest is])
+  (:require phelgeon\core :as core))
+
+(deftest parse-input-explore-directions
+  (is (= :north (core/parse-input "n" :explore)))
+  (is (= :south (core/parse-input "s" :explore)))
+  (is (= :east  (core/parse-input "e" :explore)))
+  (is (= :west  (core/parse-input "w" :explore))))

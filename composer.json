@@ -17,6 +17,7 @@
         "chemaclass/phel-cli-gui": "^0.9"
     },
     "scripts": {
-        "start": "phel run phelgeon\\\\main"
+        "start": "phel run phelgeon\\\\main",
+        "test": "phel test"
     }
 }

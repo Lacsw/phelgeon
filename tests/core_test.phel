@@ -7,3 +7,43 @@
   (is (= :south (core/parse-input "s" :explore)))
   (is (= :east  (core/parse-input "e" :explore)))
   (is (= :west  (core/parse-input "w" :explore))))
+
+(deftest parse-input-explore-meta
+  (is (= :inventory (core/parse-input "i" :explore)))
+  (is (= :quit      (core/parse-input "q" :explore)))
+  (is (= :yes       (core/parse-input "y" :explore)))
+  (is (= :noop      (core/parse-input "x" :explore)))
+  (is (= :noop      (core/parse-input ""  :explore)))
+  (is (= :noop      (core/parse-input nil :explore))))
+
+(deftest parse-input-combat
+  (is (= :attack     (core/parse-input "a" :combat)))
+  (is (= :flee       (core/parse-input "f" :combat)))
+  (is (= :use-potion (core/parse-input "u" :combat)))
+  (is (= :use-bomb   (core/parse-input "b" :combat)))
+  (is (= :noop       (core/parse-input "z" :combat))))
+
+(deftest parse-input-inventory
+  (is (= :slot-1 (core/parse-input "1" :inventory)))
+  (is (= :slot-2 (core/parse-input "2" :inventory)))
+  (is (= :back   (core/parse-input "b" :inventory)))
+  (is (= :noop   (core/parse-input "x" :inventory))))
+
+(deftest parse-input-prompt-modes
+  (is (= :enter (core/parse-input "anything" :intro)))
+  (is (= :enter (core/parse-input ""         :gameover)))
+  (is (= :enter (core/parse-input "k"        :victory)))
+  (is (= :enter (core/parse-input "j"        :quit))))
+
+(deftest parse-input-normalization
+  ;; Trims whitespace, lowercases, takes first char.
+  (is (= :north (core/parse-input "  N\n" :explore)))
+  (is (= :north (core/parse-input "NORTH" :explore)))
+  (is (= :attack (core/parse-input " A " :combat))))
+
+(deftest parse-input-ignores-escape-sequences
+  ;; Regression for commit 41ded29: arrow keys / mouse wheel emit ESC[A etc.
+  ;; The first byte after trim is "[" (ESC stripped by trim? no — ESC is 0x1b, not whitespace).
+  ;; Actual first char is the ESC byte. Either way the result must be :noop, not a stray command.
+  (is (= :noop (core/parse-input "\e[A" :explore)))
+  (is (= :noop (core/parse-input "\e[B" :combat))))

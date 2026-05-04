@@ -173,3 +173,77 @@
         "Flee always appends a log line.")
     (is (= (= :explore (:mode s1)) (nil? (:combat s1)))
         "Combat is nil iff flee succeeded.")))
+
+(deftest move-valid-direction-updates-current
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :north)]
+    (is (= :combat-room (:current s1)))
+    (is (contains? (:visited s1) :combat-room))
+    (is (= :south (:from-dir s1)) "from-dir is opposite of move direction.")))
+
+(deftest move-invalid-direction-keeps-room-and-logs
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :south)]
+    (is (= :entrance (:current s1)))
+    (is (> (count (:log s1)) (count (:log s0))) "Logged 'no exit'.")))
+
+(deftest move-into-uncleared-combat-room-enters-combat
+  ;; Set combat-room :cleared false and give it an enemy.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:rooms :combat-room :cleared] false)
+               (assoc-in [:rooms :combat-room :enemies] [(f/weak-goblin)]))
+        s1 (core/step s0 :north)]
+    (is (= :combat (:mode s1)))
+    (is (= 1 (count (get-in s1 [:combat :enemies]))))))
+
+(deftest move-into-treasure-applies-loot-and-clears
+  (let [s0 (f/explore-state-with-room (f/treasure-room))
+        s1 (core/step s0 :north)]
+    (is (= 10 (get-in s1 [:player :gold])))
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))
+    (is (= :explore (:mode s1)))))
+
+(deftest move-into-rest-room-heals-and-clears
+  (let [s0 (-> (f/explore-state-with-room (f/rest-room))
+               (assoc-in [:player :hp] 10))
+        s1 (core/step s0 :north)]
+    (is (> (get-in s1 [:player :hp]) 10))
+    (is (<= (get-in s1 [:player :hp]) 30))
+    (is (:cleared (get-in s1 [:rooms :rest-room])))))
+
+(deftest move-into-exit-sets-pending-descend
+  (let [s0 (f/explore-state)
+        ;; Walk north into combat-room (already cleared in default fixture),
+        ;; then north again into exit.
+        s1 (core/step s0 :north)
+        s2 (core/step s1 :north)]
+    (is (:pending-descend s2))))
+
+(deftest descend-confirm-advances-floor
+  (let [s0 (-> (f/explore-state)
+               (assoc :pending-descend true)
+               (assoc :floor 1))
+        s1 (core/step s0 :yes)]
+    (is (= 2 (:floor s1)))
+    (is (not (:pending-descend s1)))
+    (is (= :entrance (:current s1)))))
+
+(deftest descend-cancel-with-north-clears-pending
+  (let [s0 (-> (f/explore-state)
+               (assoc :pending-descend true))
+        s1 (core/step s0 :north)]
+    (is (not (:pending-descend s1)))
+    (is (= 1 (:floor s1)) "Floor unchanged.")))
+
+(deftest quit-confirmation-flow
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :quit)        ; ask for confirmation
+        s2 (core/step s1 :yes)]        ; confirm
+    (is (:pending-quit s1))
+    (is (= :quit (:mode s2)))))
+
+(deftest quit-cancel-with-second-q
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :quit)
+        s2 (core/step s1 :quit)]
+    (is (not (:pending-quit s2)))))

@@ -66,3 +66,31 @@
   (let [inv (get-in state [:player :inventory])
         inv2 (vec (concat inv (for [_ :range [0 n]] :potion)))]
     (assoc-in state [:player :inventory] inv2)))
+
+(defn treasure-room
+  "A treasure room with a deterministic gold loot of 10."
+  []
+  {:id :treasure-room :type :treasure
+   :exits {:south :entrance}
+   :description "treasure" :cleared false :trap false
+   :loot {:item :gold :gold 10}})
+
+(defn rest-room
+  []
+  {:id :rest-room :type :rest
+   :exits {:south :entrance}
+   :description "rest" :cleared false :trap false})
+
+(defn explore-state-with-room
+  "Attach a custom room to entrance via :north; sit player at entrance."
+  [room]
+  (let [base (explore-state)
+        rooms-without-combat (-> (:rooms base)
+                                 (assoc :entrance
+                                        {:id :entrance :type :entrance
+                                         :exits {:north (:id room)}
+                                         :description "entrance"
+                                         :cleared true :trap false})
+                                 (dissoc :combat-room :exit)
+                                 (assoc (:id room) room))]
+    (assoc base :rooms rooms-without-combat)))

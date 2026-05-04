@@ -64,3 +64,40 @@
   (let [s0 (f/explore-state)
         s1 (core/step s0 :south)]
     (is (= 1 (count (:log s1))))))
+
+(deftest inventory-mode-toggle
+  (let [s0 (f/explore-state)
+        s1 (core/step s0 :inventory)
+        s2 (core/step s1 :back)]
+    (is (= :inventory (:mode s1)))
+    (is (= :explore   (:mode s2)))))
+
+(deftest use-potion-from-inventory-heals-and-caps
+  ;; Player at hp 5, max 30, with potion. Drink in inventory mode.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:player :hp] 5)
+               (f/with-potion 1)
+               (assoc :mode :inventory))
+        s1 (core/step s0 :slot-1)]
+    (is (= :explore (:mode s1)) "Returns to explore after using potion.")
+    (is (> (get-in s1 [:player :hp]) 5) "HP increased.")
+    (is (<= (get-in s1 [:player :hp]) 30) "HP capped at max.")
+    (is (= 1 (get-in s1 [:player :potions-used])))
+    (is (= 0 (count (get-in s1 [:player :inventory]))) "Potion consumed.")))
+
+(deftest use-potion-caps-at-max-hp
+  ;; Player already at full HP — heal should be 0 net but potion still consumed.
+  (let [s0 (-> (f/explore-state)
+               (f/with-potion 1)
+               (assoc :mode :inventory))
+        s1 (core/step s0 :slot-1)]
+    (is (= 30 (get-in s1 [:player :hp])))
+    (is (= 0 (count (get-in s1 [:player :inventory]))))))
+
+(deftest use-potion-with-no-potion-noops
+  (let [s0 (assoc (f/explore-state) :mode :inventory)
+        s1 (core/step s0 :slot-1)]
+    ;; mode stays :inventory because the use-handler logs and does NOT flip mode.
+    ;; (Behavior of do-use-potion-explore: only flips mode on success.)
+    (is (= :inventory (:mode s1)))
+    (is (> (count (:log s1)) 0) "Logs a 'no potions' line.")))

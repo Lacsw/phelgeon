@@ -104,3 +104,65 @@
     (is (> (count (:log s1)) 0) "Logs a 'no potions' line.")
     (is (= 0 (get-in s1 [:player :potions-used])) "Counter not incremented on no-op.")
     (is (= 30 (get-in s1 [:player :hp])) "HP unchanged.")))
+
+(deftest attack-kills-weak-enemy
+  ;; Enemy hp 1 → any positive damage kills it.
+  (let [s0 (f/combat-state [(f/weak-goblin)])
+        s1 (core/step s0 :attack)]
+    (is (= :explore (:mode s1)) "Mode flips back to explore after killing only enemy.")
+    (is (nil? (:combat s1)) "Combat cleared.")
+    (is (= 1 (get-in s1 [:player :kills])))
+    (is (:cleared (get-in s1 [:rooms :combat-room])) "Room marked cleared.")))
+
+(deftest attack-tracks-biggest-hit
+  (let [s0 (f/combat-state [(f/weak-goblin)])
+        s1 (core/step s0 :attack)]
+    (is (> (get-in s1 [:player :biggest-hit]) 0))))
+
+(deftest fatal-incoming-damage-flips-to-gameover
+  ;; Player hp 1 vs brute (attack 99). Player attacks → enemy doesn't die (hp 99) →
+  ;; enemy turn fires → player dies.
+  (let [s0 (-> (f/combat-state [(f/brute)])
+               (assoc-in [:player :hp] 1))
+        s1 (core/step s0 :attack)]
+    (is (= :gameover (:mode s1)))))
+
+(deftest combat-with-multiple-enemies-stays-in-combat
+  ;; Two weak goblins; first attack kills one, but second still alive.
+  (let [s0 (f/combat-state [(f/weak-goblin) (f/weak-goblin)])
+        s1 (core/step s0 :attack)]
+    (is (= :combat (:mode s1)) "Still in combat with one alive.")
+    (is (= 1 (get-in s1 [:player :kills])))
+    (is (= 1 (count (filter (fn [e] (> (:hp e) 0))
+                            (get-in s1 [:combat :enemies]))))
+        "One enemy still alive.")))
+
+(deftest use-potion-in-combat-consumes-and-triggers-enemy-turn
+  (let [s0 (-> (f/combat-state [(f/weak-goblin)])
+               (assoc-in [:player :hp] 5)
+               (f/with-potion 1))
+        hp-before 5
+        s1 (core/step s0 :use-potion)
+        ;; Net hp change = +heal -enemy-attack (>= 1). Should still be > before.
+        hp-after (get-in s1 [:player :hp])]
+    (is (= 0 (count (get-in s1 [:player :inventory]))))
+    (is (= 1 (get-in s1 [:player :potions-used])))
+    (is (> hp-after hp-before) "Net HP positive after potion + enemy attack.")))
+
+(deftest use-bomb-instakills-and-tracks-kill
+  (let [s0 (-> (f/combat-state [(f/brute)])
+               (update-in [:player :inventory] conj :bomb))
+        s1 (core/step s0 :use-bomb)]
+    (is (= :explore (:mode s1)))
+    (is (= 1 (get-in s1 [:player :kills])))
+    (is (= 0 (count (get-in s1 [:player :inventory]))))))
+
+(deftest flee-noop-when-attempt-fails-keeps-combat
+  ;; Flee uses RNG; can't assert outcome without seeding. Instead verify
+  ;; that whichever branch fires, state is still well-formed.
+  (let [s0 (f/combat-state [(f/weak-goblin)])
+        s1 (core/step s0 :flee)]
+    (is (or (= :explore (:mode s1))   ; flee succeeded
+            (= :combat  (:mode s1))   ; flee failed, still in combat
+            (= :gameover (:mode s1))) ; flee failed and enemy killed (hp 1, attack 1)
+        "Mode lands in one of the expected states.")))

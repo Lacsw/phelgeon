@@ -138,16 +138,19 @@
         "One enemy still alive.")))
 
 (deftest use-potion-in-combat-consumes-and-triggers-enemy-turn
+  ;; Bump max-hp so the cap doesn't mask whether enemy-turn ran.
+  ;; Net hp = before + POTION-HEAL - enemy-dmg; enemy-dmg >= 1 so hp < before+POTION-HEAL.
   (let [s0 (-> (f/combat-state [(f/weak-goblin)])
+               (assoc-in [:player :max-hp] 100)
                (assoc-in [:player :hp] 5)
                (f/with-potion 1))
-        hp-before 5
         s1 (core/step s0 :use-potion)
-        ;; Net hp change = +heal -enemy-attack (>= 1). Should still be > before.
         hp-after (get-in s1 [:player :hp])]
     (is (= 0 (count (get-in s1 [:player :inventory]))))
     (is (= 1 (get-in s1 [:player :potions-used])))
-    (is (> hp-after hp-before) "Net HP positive after potion + enemy attack.")))
+    (is (> hp-after 5) "Net HP positive after potion + enemy attack.")
+    (is (< hp-after (+ 5 ct/POTION-HEAL))
+        "Enemy turn fired — final hp lower than full-heal-only would yield.")))
 
 (deftest use-bomb-instakills-and-tracks-kill
   (let [s0 (-> (f/combat-state [(f/brute)])
@@ -157,12 +160,16 @@
     (is (= 1 (get-in s1 [:player :kills])))
     (is (= 0 (count (get-in s1 [:player :inventory]))))))
 
-(deftest flee-noop-when-attempt-fails-keeps-combat
-  ;; Flee uses RNG; can't assert outcome without seeding. Instead verify
-  ;; that whichever branch fires, state is still well-formed.
+(deftest flee-result-is-consistent
+  ;; weak-goblin atk 1 + player hp 30 => player cannot die on flee failure,
+  ;; so :gameover is not a reachable outcome. Mode is exactly one of {:explore, :combat}.
+  ;; Either branch must always append a log line.
   (let [s0 (f/combat-state [(f/weak-goblin)])
         s1 (core/step s0 :flee)]
-    (is (or (= :explore (:mode s1))   ; flee succeeded
-            (= :combat  (:mode s1))   ; flee failed, still in combat
-            (= :gameover (:mode s1))) ; flee failed and enemy killed (hp 1, attack 1)
-        "Mode lands in one of the expected states.")))
+    (is (or (= :explore (:mode s1))
+            (= :combat  (:mode s1)))
+        "Mode lands in success (:explore) or failure (:combat); :gameover unreachable here.")
+    (is (> (count (:log s1)) (count (:log s0)))
+        "Flee always appends a log line.")
+    (is (= (= :explore (:mode s1)) (nil? (:combat s1)))
+        "Combat is nil iff flee succeeded.")))

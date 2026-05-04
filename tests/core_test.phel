@@ -72,16 +72,18 @@
     (is (= :inventory (:mode s1)))
     (is (= :explore   (:mode s2)))))
 
-(deftest use-potion-from-inventory-heals-and-caps
-  ;; Player at hp 5, max 30, with potion. Drink in inventory mode.
+(deftest use-potion-from-inventory-heals
+  ;; Player at hp 5 with max-hp 100 (override fixture). POTION-HEAL is 30 → exact 35.
+  ;; This is the "partial heal" path; the cap path is covered by use-potion-caps-at-max-hp.
   (let [s0 (-> (f/explore-state)
+               (assoc-in [:player :max-hp] 100)
                (assoc-in [:player :hp] 5)
                (f/with-potion 1)
                (assoc :mode :inventory))
         s1 (core/step s0 :slot-1)]
     (is (= :explore (:mode s1)) "Returns to explore after using potion.")
-    (is (> (get-in s1 [:player :hp]) 5) "HP increased.")
-    (is (<= (get-in s1 [:player :hp]) 30) "HP capped at max.")
+    (is (= (+ 5 ct/POTION-HEAL) (get-in s1 [:player :hp]))
+        "HP increased by exactly POTION-HEAL.")
     (is (= 1 (get-in s1 [:player :potions-used])))
     (is (= 0 (count (get-in s1 [:player :inventory]))) "Potion consumed.")))
 
@@ -98,6 +100,7 @@
   (let [s0 (assoc (f/explore-state) :mode :inventory)
         s1 (core/step s0 :slot-1)]
     ;; mode stays :inventory because the use-handler logs and does NOT flip mode.
-    ;; (Behavior of do-use-potion-explore: only flips mode on success.)
     (is (= :inventory (:mode s1)))
-    (is (> (count (:log s1)) 0) "Logs a 'no potions' line.")))
+    (is (> (count (:log s1)) 0) "Logs a 'no potions' line.")
+    (is (= 0 (get-in s1 [:player :potions-used])) "Counter not incremented on no-op.")
+    (is (= 30 (get-in s1 [:player :hp])) "HP unchanged.")))

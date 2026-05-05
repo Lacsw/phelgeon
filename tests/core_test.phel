@@ -203,6 +203,48 @@
     (is (:cleared (get-in s1 [:rooms :treasure-room])))
     (is (= :explore (:mode s1)))))
 
+(defn- treasure-with-loot
+  "Override the treasure-room fixture's :loot for a single-branch apply-loot test."
+  [loot]
+  (-> (f/explore-state-with-room (f/treasure-room))
+      (assoc-in [:rooms :treasure-room :loot] loot)))
+
+(deftest loot-potion-adds-to-inventory
+  (let [s0 (treasure-with-loot {:item :potion :gold 0})
+        s1 (core/step s0 :north)]
+    (is (= [:potion] (get-in s1 [:player :inventory])))
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))
+    (is (= :explore (:mode s1)))))
+
+(deftest loot-bomb-adds-to-inventory
+  (let [s0 (treasure-with-loot {:item :bomb :gold 0})
+        s1 (core/step s0 :north)]
+    (is (= [:bomb] (get-in s1 [:player :inventory])))
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))))
+
+(deftest loot-scroll-heal-adds-to-inventory
+  (let [s0 (treasure-with-loot {:item :scroll-heal :gold 0})
+        s1 (core/step s0 :north)]
+    (is (= [:scroll-heal] (get-in s1 [:player :inventory])))
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))))
+
+(deftest loot-sword-bumps-attack
+  ;; fresh-player has :attack 5; sword bonus is +SWORD-BONUS, permanent.
+  (let [s0 (treasure-with-loot {:item :sword :gold 0})
+        before (get-in s0 [:player :attack])
+        s1 (core/step s0 :north)]
+    (is (= (+ before ct/SWORD-BONUS) (get-in s1 [:player :attack])))
+    (is (= 0 (count (get-in s1 [:player :inventory]))) "Sword is not stored in inventory.")
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))))
+
+(deftest loot-armor-bumps-defense
+  (let [s0 (treasure-with-loot {:item :armor :gold 0})
+        before (get-in s0 [:player :defense])
+        s1 (core/step s0 :north)]
+    (is (= (+ before ct/ARMOR-BONUS) (get-in s1 [:player :defense])))
+    (is (= 0 (count (get-in s1 [:player :inventory]))) "Armor is not stored in inventory.")
+    (is (:cleared (get-in s1 [:rooms :treasure-room])))))
+
 (deftest move-into-rest-room-heals-and-clears
   ;; REST-HEAL=20, hp 10, max-hp 30 -> exact 30 (capped). Tightened from <= 30.
   (let [s0 (-> (f/explore-state-with-room (f/rest-room))

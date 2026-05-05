@@ -96,6 +96,25 @@
     (is (= 30 (get-in s1 [:player :hp])))
     (is (= 0 (count (get-in s1 [:player :inventory]))))))
 
+(deftest use-scroll-heal-fully-restores-hp
+  ;; scroll-heal sets hp = max-hp, regardless of how low the gap is.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 5)
+               (update-in [:player :inventory] conj :scroll-heal)
+               (assoc :mode :inventory))
+        s1 (core/step s0 :slot-2)]
+    (is (= :explore (:mode s1)) "Returns to explore after using scroll.")
+    (is (= 100 (get-in s1 [:player :hp])) "Fully healed to max-hp.")
+    (is (= 0 (count (get-in s1 [:player :inventory]))) "Scroll consumed.")))
+
+(deftest use-scroll-heal-with-no-scroll-noops
+  (let [s0 (assoc (f/explore-state) :mode :inventory)
+        s1 (core/step s0 :slot-2)]
+    (is (= :inventory (:mode s1)) "Mode stays :inventory on no-op.")
+    (is (> (count (:log s1)) 0) "Logs a 'no scrolls' line.")
+    (is (= 30 (get-in s1 [:player :hp])) "HP unchanged.")))
+
 (deftest use-potion-with-no-potion-noops
   (let [s0 (assoc (f/explore-state) :mode :inventory)
         s1 (core/step s0 :slot-1)]

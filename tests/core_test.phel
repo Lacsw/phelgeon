@@ -245,6 +245,43 @@
     (is (= 0 (count (get-in s1 [:player :inventory]))) "Armor is not stored in inventory.")
     (is (:cleared (get-in s1 [:rooms :treasure-room])))))
 
+(deftest trap-fires-on-entry-and-clears-itself
+  ;; Walk into combat-room (cleared, no enemies) with :trap true.
+  ;; Trap fires before the cleared check, so we observe damage in isolation.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:rooms :combat-room :trap] true)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 100))
+        s1 (core/step s0 :north)
+        delta (- 100 (get-in s1 [:player :hp]))]
+    (is (>= delta ct/TRAP-DAMAGE-MIN) "Damage at least TRAP-DAMAGE-MIN.")
+    (is (<= delta ct/TRAP-DAMAGE-MAX) "Damage at most TRAP-DAMAGE-MAX.")
+    (is (not (get-in s1 [:rooms :combat-room :trap])) "Trap consumed (one-shot).")
+    (is (> (count (:log s1)) 0) "Trap appended a log line.")
+    (is (= :explore (:mode s1)) "Survivable trap leaves mode untouched.")))
+
+(deftest lethal-trap-flips-to-gameover
+  ;; Player hp 1 — any trap damage (>= TRAP-DAMAGE-MIN = 5) is lethal.
+  ;; Verifies the gameover branch in maybe-fire-trap, distinct from combat death.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:rooms :combat-room :trap] true)
+               (assoc-in [:player :hp] 1))
+        s1 (core/step s0 :north)]
+    (is (= :gameover (:mode s1)))
+    (is (<= (get-in s1 [:player :hp]) 0))))
+
+(deftest trap-does-not-re-fire-on-revisit
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:rooms :combat-room :trap] true)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 100))
+        s1 (core/step s0 :north)             ; trap fires
+        hp-after-trap (get-in s1 [:player :hp])
+        s2 (core/step s1 :south)             ; back to entrance
+        s3 (core/step s2 :north)]            ; revisit combat-room
+    (is (< hp-after-trap 100) "First entry damaged the player.")
+    (is (= hp-after-trap (get-in s3 [:player :hp])) "Revisit caused no further HP change.")))
+
 (deftest move-into-rest-room-heals-and-clears
   ;; REST-HEAL=20, hp 10, max-hp 30 -> exact 30 (capped). Tightened from <= 30.
   (let [s0 (-> (f/explore-state-with-room (f/rest-room))

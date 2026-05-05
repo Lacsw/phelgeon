@@ -176,6 +176,34 @@
         s1 (core/step s0 :attack)]
     (is (= :explore (:mode s1)))))
 
+(deftest caster-enemy-deals-fixed-damage-ignoring-defense
+  ;; :caster early-returns from enemy-damage-roll with {:dmg CASTER-DAMAGE}.
+  ;; Defense is irrelevant — set it absurdly high to prove it's never subtracted.
+  (let [caster {:name "mage" :hp 99 :max-hp 99 :attack 0 :ability :caster :lore ""}
+        s0 (-> (f/combat-state [caster])
+               (assoc-in [:player :max-hp] 200)
+               (assoc-in [:player :hp] 200)
+               (assoc-in [:player :defense] 999))
+        s1 (core/step s0 :attack)
+        delta (- 200 (get-in s1 [:player :hp]))]
+    (is (= ct/CASTER-DAMAGE delta) "Caster damage is exactly CASTER-DAMAGE.")
+    (is (= :combat (:mode s1)) "Caster survived player attack; still in combat.")))
+
+(deftest phase-enemy-bypasses-defense
+  ;; A non-phase enemy against defense 999 would clamp to 1 damage.
+  ;; A phase enemy skips the defense subtraction, so damage stays in the
+  ;; jittered attack-roll range (7..13 for attack 10, ENEMY-JITTER 3).
+  (let [phaser {:name "wraith" :hp 99 :max-hp 99 :attack 10 :ability :phase :lore ""}
+        s0 (-> (f/combat-state [phaser])
+               (assoc-in [:player :max-hp] 200)
+               (assoc-in [:player :hp] 200)
+               (assoc-in [:player :defense] 999))
+        s1 (core/step s0 :attack)
+        delta (- 200 (get-in s1 [:player :hp]))]
+    (is (> delta 1)
+        "Defense skipped — damage exceeds the clamp floor of 1 that defense would force.")
+    (is (= :combat (:mode s1)) "Phaser survived player attack; still in combat.")))
+
 (deftest use-potion-in-combat-consumes-and-triggers-enemy-turn
   ;; Bump max-hp so the cap doesn't mask whether enemy-turn ran.
   ;; Net hp = before + POTION-HEAL - enemy-dmg; enemy-dmg >= 1 so hp < before+POTION-HEAL.

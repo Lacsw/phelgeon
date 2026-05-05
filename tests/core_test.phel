@@ -235,6 +235,16 @@
     (is (= :combat (:mode s1)))
     (is (= 1 (count (get-in s1 [:combat :enemies]))))))
 
+(deftest cleared-combat-room-does-not-respawn-enemies
+  ;; combat-room in three-room-map is :cleared true. Even if stale enemies
+  ;; are still on the room, enter-room must skip the combat branch.
+  (let [s0 (-> (f/explore-state)
+               (assoc-in [:rooms :combat-room :enemies] [(f/brute) (f/brute)]))
+        s1 (core/step s0 :north)]
+    (is (= :explore (:mode s1)) "Re-entering a cleared room must NOT flip to :combat.")
+    (is (nil? (:combat s1)))
+    (is (= :combat-room (:current s1)))))
+
 (deftest move-into-treasure-applies-loot-and-clears
   (let [s0 (f/explore-state-with-room (f/treasure-room))
         s1 (core/step s0 :north)]

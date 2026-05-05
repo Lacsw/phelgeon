@@ -137,6 +137,26 @@
                             (get-in s1 [:combat :enemies]))))
         "One enemy still alive.")))
 
+(deftest boss-kill-on-final-floor-flips-to-victory
+  ;; maybe-victory checks (and (= room-type :boss) (= floor FINAL-FLOOR)).
+  ;; Both true → :victory; this is the only path out of the game alive.
+  (let [s0 (-> (f/combat-state [(f/weak-goblin)])
+               (assoc :floor ct/FINAL-FLOOR)
+               (assoc-in [:rooms :combat-room :type] :boss))
+        s1 (core/step s0 :attack)]
+    (is (= :victory (:mode s1)))
+    (is (nil? (:combat s1)))
+    (is (:cleared (get-in s1 [:rooms :combat-room])))))
+
+(deftest boss-kill-on-non-final-floor-returns-to-explore
+  ;; The floor check matters — same :boss room on floor 1 must NOT trigger victory.
+  ;; (Real game only places :boss on FINAL-FLOOR, but the predicate guards anyway.)
+  (let [s0 (-> (f/combat-state [(f/weak-goblin)])
+               (assoc :floor 1)
+               (assoc-in [:rooms :combat-room :type] :boss))
+        s1 (core/step s0 :attack)]
+    (is (= :explore (:mode s1)))))
+
 (deftest use-potion-in-combat-consumes-and-triggers-enemy-turn
   ;; Bump max-hp so the cap doesn't mask whether enemy-turn ran.
   ;; Net hp = before + POTION-HEAL - enemy-dmg; enemy-dmg >= 1 so hp < before+POTION-HEAL.

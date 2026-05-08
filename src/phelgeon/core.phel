@@ -126,7 +126,7 @@
                   (recur m remaining next-pool)))))))
 
 (defn- scale-stat [base mult]
-  (max 1 (php/intval (* (jitter base ct/STAT-JITTER-PCT) mult))))
+  (max 1 (int (* (jitter base ct/STAT-JITTER-PCT) mult))))
 
 (defn- build-enemy [floor]
   (let [tmpl (rand-pick ct/ENEMY-POOL)
@@ -141,8 +141,8 @@
 (defn- build-boss [floor]
   (let [tmpl (rand-pick ct/BOSSES)
         mult (get ct/FLOOR-MULT (dec floor))
-        hp (max 1 (php/intval (* (:hp tmpl) mult)))
-        atk (max 1 (php/intval (* (:attack tmpl) mult)))]
+        hp (max 1 (int (* (:hp tmpl) mult)))
+        atk (max 1 (int (* (:attack tmpl) mult)))]
     {:name    (:name tmpl)
      :title   (:title tmpl)
      :lore    (:lore tmpl)
@@ -242,7 +242,7 @@
 
 (defn parse-input [raw mode]
   (let [c (s/lower-case (s/trim (or raw "")))
-        first-c (if (s/blank? c) "" (php/substr c 0 1))]
+        first-c (if (s/blank? c) "" (s/subs c 0 1))]
     (case mode
       :explore   (case first-c
                    "n" :north  "s" :south  "e" :east  "w" :west
@@ -307,7 +307,7 @@
 ;; =============================================================================
 
 (defn- format-trap-msg [tmpl dmg]
-  (php/str_replace "{N}" (str dmg) tmpl))
+  (s/replace tmpl "{N}" (str dmg)))
 
 (defn- maybe-fire-trap [state room-id]
   (let [room (get-in state [:rooms room-id])]
@@ -376,7 +376,7 @@
   (let [base (:attack player)
         roll (jitter base (quot (* ct/ATTACK-JITTER 100) base))
         crit (rand-percent? ct/CRIT-CHANCE)]
-    {:dmg (max 1 (if crit (php/intval (* roll ct/CRIT-MULT)) roll))
+    {:dmg (max 1 (if crit (int (* roll ct/CRIT-MULT)) roll))
      :crit crit}))
 
 (defn- apply-tough [base-dmg target-ability]

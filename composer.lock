@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "71ea296538f4a4880b0d17dbd87480eb",
+    "content-hash": "c5bb96a3885e831079576e44dc183fa0",
     "packages": [
         {
             "name": "amphp/amp",
@@ -89,23 +89,23 @@
         },
         {
             "name": "chemaclass/phel-cli-gui",
-            "version": "0.9.0",
+            "version": "0.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Chemaclass/phel-cli-gui.git",
-                "reference": "3efb71c2b321c5fe5bd8bf277f657af6f6ec5ff4"
+                "reference": "58aedf524870df45897de3e165492a6563f4ea93"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Chemaclass/phel-cli-gui/zipball/3efb71c2b321c5fe5bd8bf277f657af6f6ec5ff4",
-                "reference": "3efb71c2b321c5fe5bd8bf277f657af6f6ec5ff4",
+                "url": "https://api.github.com/repos/Chemaclass/phel-cli-gui/zipball/58aedf524870df45897de3e165492a6563f4ea93",
+                "reference": "58aedf524870df45897de3e165492a6563f4ea93",
                 "shasum": ""
             },
             "require": {
                 "ext-pcntl": "*",
                 "ext-posix": "*",
                 "ext-readline": "*",
-                "phel-lang/phel-lang": "^0.34",
+                "phel-lang/phel-lang": "^0.34 || ^0.36",
                 "php": ">=8.3",
                 "symfony/console": "^7.4"
             },
@@ -141,9 +141,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Chemaclass/phel-cli-gui/issues",
-                "source": "https://github.com/Chemaclass/phel-cli-gui/tree/0.9.0"
+                "source": "https://github.com/Chemaclass/phel-cli-gui/tree/0.10.0"
             },
-            "time": "2026-04-21T10:11:46+00:00"
+            "time": "2026-05-08T15:59:34+00:00"
         },
         {
             "name": "gacela-project/container",
@@ -300,16 +300,16 @@
         },
         {
             "name": "phel-lang/phel-lang",
-            "version": "dev-main",
+            "version": "v0.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phel-lang/phel-lang.git",
-                "reference": "bee68ffe1bfa8df3090e9b7cf91277040d61215c"
+                "reference": "303d12316cf8b1e72c9e29191018c2bc13d4a0d3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/bee68ffe1bfa8df3090e9b7cf91277040d61215c",
-                "reference": "bee68ffe1bfa8df3090e9b7cf91277040d61215c",
+                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/303d12316cf8b1e72c9e29191018c2bc13d4a0d3",
+                "reference": "303d12316cf8b1e72c9e29191018c2bc13d4a0d3",
                 "shasum": ""
             },
             "require": {
@@ -331,7 +331,6 @@
                 "symfony/var-dumper": "^7.4",
                 "vimeo/psalm": "^6.16"
             },
-            "default-branch": true,
             "bin": [
                 "bin/phel"
             ],
@@ -344,82 +343,7 @@
                     "src/Phel.php"
                 ]
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "PhelTest\\": "tests/php"
-                }
-            },
-            "scripts": {
-                "csfix": [
-                    "./vendor/bin/php-cs-fixer fix"
-                ],
-                "csrun": [
-                    "./vendor/bin/php-cs-fixer fix --dry-run"
-                ],
-                "fix": [
-                    "@rector:fix",
-                    "@csfix"
-                ],
-                "phpbench": [
-                    "./vendor/bin/phpbench run --report=aggregate --ansi"
-                ],
-                "phpbench-base": [
-                    "./vendor/bin/phpbench run --tag=baseline --report=aggregate --progress=plain --ansi"
-                ],
-                "phpbench-ref": [
-                    "./vendor/bin/phpbench run --ref=baseline --report=aggregate --progress=plain --ansi"
-                ],
-                "phpstan": [
-                    "./vendor/bin/phpstan --memory-limit=1G"
-                ],
-                "psalm": [
-                    "./vendor/bin/psalm --no-cache"
-                ],
-                "rector": [
-                    "./vendor/bin/rector process --dry-run"
-                ],
-                "rector:fix": [
-                    "./vendor/bin/rector process"
-                ],
-                "static-clear-cache": [
-                    "vendor/bin/psalm --clear-cache",
-                    "vendor/bin/phpstan clear-result-cache"
-                ],
-                "test": [
-                    "@test-all"
-                ],
-                "test-all": [
-                    "@static-clear-cache",
-                    "@test-quality",
-                    "@test-compiler",
-                    "@test-core"
-                ],
-                "test-compiler": [
-                    "./vendor/bin/phpunit --testsuite=unit,integration --log-junit=data/log-junit.xml"
-                ],
-                "test-compiler:coverage": [
-                    "XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=unit,integration --coverage-html=data/coverage-html --coverage-xml=data/coverage-xml --log-junit=data/coverage-xml/junit.xml"
-                ],
-                "test-agents": [
-                    "./build/validate-agents.sh"
-                ],
-                "test-core": [
-                    "php -d memory_limit=256M ./bin/phel test"
-                ],
-                "test-quality": [
-                    "@csrun",
-                    "@psalm",
-                    "@phpstan",
-                    "@rector",
-                    "@validate-config"
-                ],
-                "validate-config": [
-                    "./bin/phel validate:config"
-                ],
-                "create-pr": [
-                    "./tools/create-pr"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -443,16 +367,16 @@
                 "phel"
             ],
             "support": {
-                "source": "https://github.com/phel-lang/phel-lang/tree/main",
-                "issues": "https://github.com/phel-lang/phel-lang/issues"
+                "issues": "https://github.com/phel-lang/phel-lang/issues",
+                "source": "https://github.com/phel-lang/phel-lang/tree/v0.36.0"
             },
             "funding": [
                 {
-                    "type": "custom",
-                    "url": "https://chemaclass.com/sponsor"
+                    "url": "https://chemaclass.com/sponsor",
+                    "type": "custom"
                 }
             ],
-            "time": "2026-05-08T14:56:01+00:00"
+            "time": "2026-05-08T06:40:37+00:00"
         },
         {
             "name": "psr/container",
@@ -1347,19 +1271,10 @@
         }
     ],
     "packages-dev": [],
-    "aliases": [
-        {
-            "package": "phel-lang/phel-lang",
-            "version": "dev-main",
-            "alias": "0.34.x-dev",
-            "alias_normalized": "0.34.9999999.9999999-dev"
-        }
-    ],
-    "minimum-stability": "dev",
-    "stability-flags": {
-        "phel-lang/phel-lang": 20
-    },
-    "prefer-stable": true,
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
         "php": ">=8.4"

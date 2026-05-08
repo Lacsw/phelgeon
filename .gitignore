@@ -7,3 +7,5 @@ phel-config-local.php
 
 # superpowers brainstorming/plan artefacts — local notes only
 /docs/superpowers/
+.idea/
+.phel/

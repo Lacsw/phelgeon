@@ -13,8 +13,7 @@
     ],
     "require": {
         "php": ">=8.3",
-        "phel-lang/phel-lang": "dev-main as 0.34.x-dev",
-        "chemaclass/phel-cli-gui": "^0.9"
+        "phel-lang/phel-lang": "^0.36.0"
     },
     "scripts": {
         "start": "phel run phelgeon\\\\main",

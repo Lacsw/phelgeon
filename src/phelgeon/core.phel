@@ -20,7 +20,7 @@
 
 (defn- jitter [base pct]
   ;; base ± pct% (integer math)
-  (let [delta (php/intval (/ (* base pct) 100))]
+  (let [delta (quot (* base pct) 100)]
     (if (<= delta 0)
       base
       (+ base (rand-range (- delta) delta)))))
@@ -374,14 +374,14 @@
 
 (defn- player-damage-roll [player]
   (let [base (:attack player)
-        roll (jitter base (php/intval (* (/ ct/ATTACK-JITTER base) 100)))
+        roll (jitter base (quot (* ct/ATTACK-JITTER 100) base))
         crit (rand-percent? ct/CRIT-CHANCE)]
     {:dmg (max 1 (if crit (php/intval (* roll ct/CRIT-MULT)) roll))
      :crit crit}))
 
 (defn- apply-tough [base-dmg target-ability]
   (if (and (= target-ability :tough) (rand-percent? ct/ABILITY-CHANCE))
-    {:dmg (max 1 (php/intval (/ base-dmg 2))) :tough true}
+    {:dmg (max 1 (quot base-dmg 2)) :tough true}
     {:dmg base-dmg :tough false}))
 
 (defn- enemy-damage-roll [enemy player]
@@ -392,7 +392,7 @@
 
       :else
       (let [base (:attack enemy)
-            roll (jitter base (php/intval (* (/ ct/ENEMY-JITTER base) 100)))
+            roll (jitter base (quot (* ct/ENEMY-JITTER 100) base))
             fury? (and (= a :fury) (rand-percent? ct/ABILITY-CHANCE))
             after-fury (if fury? (* roll 2) roll)
             phase? (= a :phase)

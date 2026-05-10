@@ -414,3 +414,75 @@
         s1 (core/step s0 :north)]
     (is (not (:pending-quit s1)))
     (is (= :explore (:mode s1)))))
+
+(deftest poison-deals-damage-and-decrements
+  ;; Player :poison 2, max-hp 100, hp 100.
+  ;; tick: poison_dmg = max(1, floor(100 * 5/100)) = 5.
+  ;; enemy (attack 0): deals max(1, 0-1) = 1 damage.
+  ;; total hp loss this round = 6 (deterministic with zero-attack-enemy).
+  (let [s0 (-> (f/combat-state [(f/zero-attack-enemy)])
+               (assoc-in [:player :poison] 2)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 100))
+        s1 (core/step s0 :attack)]
+    (is (= 94 (get-in s1 [:player :hp]))
+        "Poison (5) + enemy hit (1) = 6 damage.")
+    (is (= 1 (get-in s1 [:player :poison] 0))
+        "Counter decremented from 2 to 1.")))
+
+(deftest burn-deals-flat-damage-and-decrements
+  ;; BURN-DAMAGE = 3. Player :burn 1, hp 100, max-hp 100.
+  ;; tick: burn_dmg = 3. enemy: 1 damage. total = 4.
+  (let [s0 (-> (f/combat-state [(f/zero-attack-enemy)])
+               (assoc-in [:player :burn] 1)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 100))
+        s1 (core/step s0 :attack)]
+    (is (= 96 (get-in s1 [:player :hp]))
+        "Burn (3) + enemy hit (1) = 4 damage.")
+    (is (= 0 (get-in s1 [:player :burn] 0))
+        "Burn counter reached 0 and expired.")))
+
+(deftest status-expires-at-zero-and-stops-damage
+  ;; :poison 1 → expires after one tick.
+  ;; After two rounds, only 1 round of poison damage should accumulate.
+  (let [enemy (assoc (f/zero-attack-enemy) :ability :none)
+        s0 (-> (f/combat-state [enemy])
+               (assoc-in [:player :poison] 1)
+               (assoc-in [:player :max-hp] 100)
+               (assoc-in [:player :hp] 100))
+        s1 (core/step s0 :attack)
+        hp-after-round1 (get-in s1 [:player :hp])
+        s2 (core/step s1 :attack)
+        hp-after-round2 (get-in s2 [:player :hp])]
+    (is (= 0 (get-in s1 [:player :poison] 0))
+        "Poison expired after round 1.")
+    ;; Round 1: 5 (poison) + 1 (enemy) = 6 damage.
+    ;; Round 2: 0 (no poison) + 1 (enemy) = 1 damage.
+    (is (= 94 hp-after-round1))
+    (is (= 93 hp-after-round2) "Only enemy damage in round 2 — no poison.")))
+
+(deftest player-stun-skips-attack-and-decrements
+  ;; Enemy has 5 hp. Player is stunned → cannot attack → enemy survives.
+  ;; Enemy has attack 0 so player doesn't die.
+  (let [enemy {:name "target" :hp 5 :max-hp 5 :attack 0 :ability :none :lore ""}
+        s0 (-> (f/combat-state [enemy])
+               (assoc-in [:player :stun] 1))
+        s1 (core/step s0 :attack)]
+    (is (= :combat (:mode s1))
+        "Combat continues — enemy still alive (player was stunned).")
+    (is (> (get-in s1 [:combat :enemies 0 :hp]) 0)
+        "Enemy still alive because player couldn't attack.")
+    (is (= 0 (get-in s1 [:player :stun] 0))
+        "Player stun decremented to 0.")))
+
+(deftest enemy-stun-skips-attack-and-decrements
+  ;; Brute (attack 99) would kill player (hp 30) if it attacked.
+  ;; With :stun 1, brute skips its attack — player survives.
+  (let [s0 (-> (f/combat-state [(assoc (f/brute) :stun 1)])
+               (assoc-in [:player :hp] 30))
+        s1 (core/step s0 :attack)]
+    (is (not= :gameover (:mode s1))
+        "Player survived — brute was stunned and skipped its attack.")
+    (is (= 0 (get-in s1 [:combat :enemies 0 :stun] 0))
+        "Enemy stun decremented to 0.")))

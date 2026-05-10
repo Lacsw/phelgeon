@@ -392,7 +392,7 @@
 
       :else
       (let [base (:attack enemy)
-            roll (jitter base (quot (* ct/ENEMY-JITTER 100) base))
+            roll (if (zero? base) 0 (jitter base (quot (* ct/ENEMY-JITTER 100) base)))
             fury? (and (= a :fury) (rand-percent? ct/ABILITY-CHANCE))
             after-fury (if fury? (* roll 2) roll)
             phase? (= a :phase)

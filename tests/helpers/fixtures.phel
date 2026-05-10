@@ -13,6 +13,12 @@
   []
   {:name "brute" :hp 99 :max-hp 99 :attack 99 :ability nil :lore ""})
 
+(defn zero-attack-enemy
+  "Enemy with attack 0 and high hp — deals exactly 1 damage per turn (max(1, 0-defense)),
+   never dies from a single player attack. Use for deterministic status-effect tests."
+  []
+  {:name "dummy" :hp 999 :max-hp 999 :attack 0 :ability :none :lore ""})
+
 (defn fresh-player
   "Player at full hp, no items."
   []

@@ -38,6 +38,7 @@
 (def POISON-PCT  5)          ; % of max-hp per turn (integer math)
 (def VENOM-TURNS   3)        ; poison turns applied by :venom ability
 (def INFERNO-TURNS 2)        ; burn turns applied by :inferno ability
+(def POISON-BOMB-DAMAGE 15)  ; flat damage dealt to all enemies
 
 ;; Enemy abilities:
 ;;   :none    — vanilla
@@ -107,7 +108,7 @@
   [:potion :potion :potion
    :sword :armor
    :gold :gold
-   :bomb :scroll-heal])
+   :bomb :poison-bomb :stun-scroll :scroll-heal])
 
 (def GOLD-MIN 5)
 (def GOLD-MAX 20)

@@ -251,6 +251,7 @@
                    :noop)
       :combat    (case first-c
                    "a" :attack  "f" :flee  "u" :use-potion  "b" :use-bomb
+                   "p" :use-poison-bomb  "s" :use-stun-scroll
                    :noop)
       :inventory (case first-c
                    "1" :slot-1  "2" :slot-2  "b" :back  :noop)
@@ -289,6 +290,12 @@
     :bomb   (-> state
                 (update-in [:player :inventory] conj :bomb)
                 (log "You found a bomb."))
+    :poison-bomb (-> state
+                     (update-in [:player :inventory] conj :poison-bomb)
+                     (log "You found a poison bomb."))
+    :stun-scroll (-> state
+                     (update-in [:player :inventory] conj :stun-scroll)
+                     (log "You found a stun scroll."))
     :scroll-heal (-> state
                      (update-in [:player :inventory] conj :scroll-heal)
                      (log "You found a scroll of healing."))
@@ -634,6 +641,52 @@
             (end-combat-victory s2)
             (enemy-turn s2)))))))
 
+(defn- poison-bomb-hit [enemy]
+  (if (alive? enemy)
+    (-> enemy
+        (update :hp (fn [h] (- h ct/POISON-BOMB-DAMAGE)))
+        (assoc :poison (max (get enemy :poison 0) ct/VENOM-TURNS)))
+    enemy))
+
+(defn- do-use-poison-bomb [state]
+  (if (not (has? :poison-bomb (:player state)))
+    (log state "You have no poison bombs.")
+    (let [s1 (start-round state)]
+      (if (not= :combat (:mode s1))
+        s1
+        (let [p2     (consume-item :poison-bomb (:player s1))
+              before (get-in s1 [:combat :enemies])
+              after  (vec (map poison-bomb-hit before))
+              kills  (reduce
+                        (fn [n i]
+                          (if (and (alive? (get before i)) (not (alive? (get after i))))
+                            (inc n) n))
+                        0
+                        (for [k :range [0 (count before)]] k))
+              s2     (-> s1
+                         (assoc :player p2)
+                         (assoc-in [:combat :enemies] after)
+                         (update-in [:player :kills] (fn [k] (+ k kills)))
+                         (log "You hurl a poison bomb! Venom fills the air."))]
+          (if (all-dead? after)
+            (end-combat-victory s2)
+            (enemy-turn s2)))))))
+
+(defn- do-use-stun-scroll [state]
+  (if (not (has? :stun-scroll (:player state)))
+    (log state "You have no stun scrolls.")
+    (let [s1 (start-round state)]
+      (if (not= :combat (:mode s1))
+        s1
+        (let [p2      (consume-item :stun-scroll (:player s1))
+              enemies (get-in s1 [:combat :enemies])
+              stunned (vec (map (fn [e] (if (alive? e) (assoc e :stun 1) e)) enemies))
+              s2      (-> s1
+                          (assoc :player p2)
+                          (assoc-in [:combat :enemies] stunned)
+                          (log "Lightning arcs through the room. Your foes reel!"))]
+          (enemy-turn s2))))))
+
 ;; =============================================================================
 ;; Step (top-level dispatcher)
 ;; =============================================================================
@@ -673,11 +726,13 @@
 
     :combat
     (case cmd
-      :attack     (do-attack state)
-      :flee       (do-flee state)
-      :use-potion (do-use-potion-combat state)
-      :use-bomb   (do-use-bomb state)
-      :noop       state
+      :attack          (do-attack state)
+      :flee            (do-flee state)
+      :use-potion      (do-use-potion-combat state)
+      :use-bomb        (do-use-bomb state)
+      :use-poison-bomb (do-use-poison-bomb state)
+      :use-stun-scroll (do-use-stun-scroll state)
+      :noop            state
       state)
 
     :inventory

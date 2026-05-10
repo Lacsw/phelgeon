@@ -429,76 +429,154 @@
       (log "All enemies fall.")
       (maybe-victory)))
 
+;; =============================================================================
+;; Status effects — tick runs at the start of every combat round
+;; =============================================================================
+
+(defn- tick-entity [entity]
+  ;; Applies poison/burn damage and decrements those counters.
+  ;; :stun is NOT touched here — it is decremented at the point of attack.
+  (let [poison (get entity :poison 0)
+        burn   (get entity :burn 0)
+        pdmg   (if (> poison 0) (max 1 (int (* (:max-hp entity) ct/POISON-PCT 0.01))) 0)
+        bdmg   (if (> burn 0) ct/BURN-DAMAGE 0)]
+    (-> entity
+        (update :hp (fn [h] (- h (+ pdmg bdmg))))
+        (assoc :poison (max 0 (dec poison)))
+        (assoc :burn   (max 0 (dec burn))))))
+
+(defn- tick-statuses [state]
+  ;; Ticks player and all combat enemies. Logs player damage. Counts enemy
+  ;; status-kills and adds them to :kills.
+  (let [p    (:player state)
+        p2   (tick-entity p)
+        pdmg (- (:hp p) (:hp p2))
+        s1   (if (> pdmg 0)
+               (log (assoc state :player p2)
+                    (str "You suffer " pdmg " from your ailment."))
+               (assoc state :player p2))
+        enemies (get-in s1 [:combat :enemies])
+        [new-enemies s2 kill-count]
+        (reduce
+          (fn [[es st ks] e]
+            (if (not (alive? e))
+              [(conj es e) st ks]
+              (let [e2   (tick-entity e)
+                    edmg (- (:hp e) (:hp e2))
+                    died (and (> edmg 0) (<= (:hp e2) 0))
+                    st2  (if died
+                           (log st (str "The " (:name e) " succumbs."))
+                           st)]
+                [(conj es e2) st2 (if died (inc ks) ks)])))
+          [[] s1 0]
+          enemies)]
+    (-> s2
+        (assoc-in [:combat :enemies] new-enemies)
+        (update-in [:player :kills] (fn [k] (+ k kill-count))))))
+
+(defn- check-post-tick [state]
+  (cond
+    (<= (get-in state [:player :hp]) 0)
+    (assoc state :mode :gameover)
+
+    (all-dead? (get-in state [:combat :enemies]))
+    (end-combat-victory state)
+
+    :else state))
+
+(defn- start-round [state]
+  (check-post-tick (tick-statuses state)))
+
 (defn- enemy-turn [state]
   (let [enemies (get-in state [:combat :enemies])
         idx (first-alive-idx enemies)
         attacker (when idx (get enemies idx))]
     (if (nil? attacker)
       state
-      (let [{:dmg dmg :flavor flavor} (enemy-damage-roll attacker (:player state))
-            new-hp (- (get-in state [:player :hp]) dmg)
-            base-msg (case flavor
-                       :spell (str "The " (:name attacker) " hurls a bolt for " dmg " damage.")
-                       :fury  (str "The " (:name attacker) " strikes with fury for " dmg " damage!")
-                       :phase (str "The " (:name attacker) " phases through your guard for " dmg " damage.")
-                       (str "The " (:name attacker) " hits you for " dmg " damage."))
-            s2 (-> state
-                   (assoc-in [:player :hp] new-hp)
-                   (log base-msg))]
-        (if (<= new-hp 0)
-          (assoc s2 :mode :gameover)
-          s2)))))
+      (let [estun (get attacker :stun 0)]
+        (if (> estun 0)
+          (-> state
+              (assoc-in [:combat :enemies idx :stun] (dec estun))
+              (log (str "The " (:name attacker) " staggers, too stunned to act.")))
+          (let [{:dmg dmg :flavor flavor} (enemy-damage-roll attacker (:player state))
+                new-hp (- (get-in state [:player :hp]) dmg)
+                base-msg (case flavor
+                           :spell (str "The " (:name attacker) " hurls a bolt for " dmg " damage.")
+                           :fury  (str "The " (:name attacker) " strikes with fury for " dmg " damage!")
+                           :phase (str "The " (:name attacker) " phases through your guard for " dmg " damage.")
+                           (str "The " (:name attacker) " hits you for " dmg " damage."))
+                s2 (-> state
+                       (assoc-in [:player :hp] new-hp)
+                       (log base-msg))]
+            (if (<= new-hp 0)
+              (assoc s2 :mode :gameover)
+              s2)))))))
 
 (defn- do-attack [state]
-  (let [enemies (get-in state [:combat :enemies])
-        idx (first-alive-idx enemies)
-        target (get enemies idx)
-        roll (player-damage-roll (:player state))
-        toughed (apply-tough (:dmg roll) (:ability target))
-        dmg (:dmg toughed)
-        crit (:crit roll)
-        tough? (:tough toughed)
-        new-hp (- (:hp target) dmg)
-        msg (cond
-              (and crit tough?) (str "Critical! You strike the " (:name target) " for " dmg " (shrugged off some).")
-              crit              (str "Critical! You strike the " (:name target) " for " dmg " damage.")
-              tough?            (str "The " (:name target) " shrugs off most of the blow — " dmg " damage.")
-              :else             (str "You strike the " (:name target) " for " dmg " damage."))
-        s2 (-> state
-               (assoc-in [:combat :enemies idx :hp] new-hp)
-               (update-in [:player :biggest-hit] (fn [b] (max b dmg)))
-               (log msg))
-        s3 (if (<= new-hp 0)
-             (-> s2
-                 (update-in [:player :kills] inc)
-                 (log (str "The " (:name target) " falls.")))
-             s2)]
-    (if (all-dead? (get-in s3 [:combat :enemies]))
-      (end-combat-victory s3)
-      (enemy-turn s3))))
+  (let [s1 (start-round state)]
+    (if (not= :combat (:mode s1))
+      s1
+      (let [pstun (get-in s1 [:player :stun] 0)]
+        (if (> pstun 0)
+          (-> s1
+              (assoc-in [:player :stun] (dec pstun))
+              (log "You are stunned and cannot attack!")
+              (enemy-turn))
+          (let [enemies (get-in s1 [:combat :enemies])
+                idx (first-alive-idx enemies)
+                target (get enemies idx)
+                roll (player-damage-roll (:player s1))
+                toughed (apply-tough (:dmg roll) (:ability target))
+                dmg (:dmg toughed)
+                crit (:crit roll)
+                tough? (:tough toughed)
+                new-hp (- (:hp target) dmg)
+                msg (cond
+                      (and crit tough?) (str "Critical! You strike the " (:name target) " for " dmg " (shrugged off some).")
+                      crit              (str "Critical! You strike the " (:name target) " for " dmg " damage.")
+                      tough?            (str "The " (:name target) " shrugs off most of the blow — " dmg " damage.")
+                      :else             (str "You strike the " (:name target) " for " dmg " damage."))
+                s2 (-> s1
+                       (assoc-in [:combat :enemies idx :hp] new-hp)
+                       (update-in [:player :biggest-hit] (fn [b] (max b dmg)))
+                       (log msg))
+                s3 (if (<= new-hp 0)
+                     (-> s2
+                         (update-in [:player :kills] inc)
+                         (log (str "The " (:name target) " falls.")))
+                     s2)]
+            (if (all-dead? (get-in s3 [:combat :enemies]))
+              (end-combat-victory s3)
+              (enemy-turn s3))))))))
 
 (defn- do-flee [state]
-  (if (rand-percent? ct/FLEE-CHANCE)
-    (-> state
-        (assoc :mode :explore)
-        (assoc :combat nil)
-        (log "You slip away into the dark."))
-    (-> state
-        (log "You stumble! No escape this turn.")
-        (enemy-turn))))
+  (let [s1 (start-round state)]
+    (if (not= :combat (:mode s1))
+      s1
+      (if (rand-percent? ct/FLEE-CHANCE)
+        (-> s1
+            (assoc :mode :explore)
+            (assoc :combat nil)
+            (log "You slip away into the dark."))
+        (-> s1
+            (log "You stumble! No escape this turn.")
+            (enemy-turn))))))
 
 (defn- do-use-potion-combat [state]
   (if (not (has? :potion (:player state)))
     (log state "You have no potions.")
-    (let [before-hp (get-in state [:player :hp])
-          p (consume-item :potion (:player state))
-          new-hp (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
-          p2 (-> p (assoc :hp new-hp) (update :potions-used inc))
-          gained (- new-hp before-hp)]
-      (-> state
-          (assoc :player p2)
-          (log (str "You drink a potion. +" gained " HP."))
-          (enemy-turn)))))
+    (let [s1 (start-round state)]
+      (if (not= :combat (:mode s1))
+        s1
+        (let [before-hp (get-in s1 [:player :hp])
+              p (consume-item :potion (:player s1))
+              new-hp (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
+              p2 (-> p (assoc :hp new-hp) (update :potions-used inc))
+              gained (- new-hp before-hp)]
+          (-> s1
+              (assoc :player p2)
+              (log (str "You drink a potion. +" gained " HP."))
+              (enemy-turn)))))))
 
 (defn- do-use-potion-explore [state]
   (if (not (has? :potion (:player state)))
@@ -528,18 +606,21 @@
 (defn- do-use-bomb [state]
   (if (not (has? :bomb (:player state)))
     (log state "You have no bombs.")
-    (let [enemies (get-in state [:combat :enemies])
-          idx (first-alive-idx enemies)
-          target (get enemies idx)
-          p2 (consume-item :bomb (:player state))
-          s2 (-> state
-                 (assoc :player p2)
-                 (assoc-in [:combat :enemies idx :hp] 0)
-                 (update-in [:player :kills] inc)
-                 (log (str "You hurl a bomb! The " (:name target) " is blown apart.")))]
-      (if (all-dead? (get-in s2 [:combat :enemies]))
-        (end-combat-victory s2)
-        (enemy-turn s2)))))
+    (let [s1 (start-round state)]
+      (if (not= :combat (:mode s1))
+        s1
+        (let [enemies (get-in s1 [:combat :enemies])
+              idx (first-alive-idx enemies)
+              target (get enemies idx)
+              p2 (consume-item :bomb (:player s1))
+              s2 (-> s1
+                     (assoc :player p2)
+                     (assoc-in [:combat :enemies idx :hp] 0)
+                     (update-in [:player :kills] inc)
+                     (log (str "You hurl a bomb! The " (:name target) " is blown apart.")))]
+          (if (all-dead? (get-in s2 [:combat :enemies]))
+            (end-combat-victory s2)
+            (enemy-turn s2)))))))
 
 ;; =============================================================================
 ;; Step (top-level dispatcher)

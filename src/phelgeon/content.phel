@@ -33,6 +33,10 @@
 (def CASTER-DAMAGE 12)
 (def TWO-ENEMY-CHANCE 40)
 
+;; Status effect damage per turn
+(def BURN-DAMAGE 3)          ; flat HP per turn
+(def POISON-PCT  5)          ; % of max-hp per turn (integer math)
+
 ;; Enemy abilities:
 ;;   :none    — vanilla
 ;;   :tough   — when hit, 30% chance to halve incoming damage

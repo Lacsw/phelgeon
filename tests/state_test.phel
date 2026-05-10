@@ -41,3 +41,9 @@
         cmds (vec (for [_ :range [0 15]] :south))
         s-final (play s0 cmds)]
     (is (<= (count (:log s-final)) ct/MAX-LOG-LINES))))
+
+(deftest parse-input-levelup-mode
+  (is (= :pick-hp  (core/parse-input "a" :levelup)))
+  (is (= :pick-atk (core/parse-input "b" :levelup)))
+  (is (= :pick-def (core/parse-input "c" :levelup)))
+  (is (= :noop     (core/parse-input "x" :levelup))))

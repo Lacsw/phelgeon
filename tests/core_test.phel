@@ -562,3 +562,66 @@
 (deftest parse-input-new-combat-keys
   (is (= :use-poison-bomb  (core/parse-input "p" :combat)))
   (is (= :use-stun-scroll  (core/parse-input "s" :combat))))
+
+(deftest xp-awarded-after-combat-victory
+  ;; Enemy with max-hp 20. After kill, player XP should be 20 (< XP-BASE 30 → no level-up).
+  (let [enemy {:name "e" :hp 1 :max-hp 20 :attack 0 :ability :none :lore ""}
+        s0 (f/combat-state [enemy])
+        s1 (core/step s0 :attack)]
+    (is (= :explore (:mode s1)))
+    (is (= 20 (get-in s1 [:player :xp]))
+        "XP equals enemy max-hp.")))
+
+(deftest level-up-on-xp-threshold
+  ;; xp=25 + enemy max-hp=10 = 35 >= xp-to-next=30 → level 2.
+  ;; After level-up: xp = 35-30 = 5, xp-to-next = int(30*1.5) = 45.
+  (let [enemy {:name "e" :hp 1 :max-hp 10 :attack 0 :ability :none :lore ""}
+        s0 (-> (f/combat-state [enemy])
+               (assoc-in [:player :xp] 25)
+               (assoc-in [:player :xp-to-next] 30))
+        s1 (core/step s0 :attack)]
+    (is (= 2 (get-in s1 [:player :level])) "Level incremented.")
+    (is (= 5 (get-in s1 [:player :xp])) "XP remainder after level-up.")
+    (is (= 45 (get-in s1 [:player :xp-to-next])) "Threshold scaled by 1.5.")
+    (is (= (+ (:max-hp (f/fresh-player)) ct/LEVEL-HP-BONUS)
+           (get-in s1 [:player :max-hp]))
+        "Max HP auto-bumped.")
+    (is (= (+ (:attack (f/fresh-player)) ct/LEVEL-ATK-BONUS)
+           (get-in s1 [:player :attack]))
+        "Attack auto-bumped.")))
+
+(deftest third-level-sets-levelup-mode
+  ;; Level 2, xp=44, xp-to-next=45. Enemy max-hp=1 → xp=45 → level 3 (mod 3 = 0 → :levelup).
+  (let [enemy {:name "e" :hp 1 :max-hp 1 :attack 0 :ability :none :lore ""}
+        s0 (-> (f/combat-state [enemy])
+               (assoc-in [:player :level] 2)
+               (assoc-in [:player :xp] 44)
+               (assoc-in [:player :xp-to-next] 45))
+        s1 (core/step s0 :attack)]
+    (is (= :levelup (:mode s1)) "Third level triggers :levelup mode.")
+    (is (= 3 (get-in s1 [:player :level])))))
+
+(deftest levelup-pick-hp-applies-big-hp-bonus
+  (let [s0 (-> (f/explore-state)
+               (assoc :mode :levelup))
+        base-max (get-in s0 [:player :max-hp])
+        s1 (core/step s0 :pick-hp)]
+    (is (= :explore (:mode s1)) "Returns to explore.")
+    (is (= (+ base-max ct/BIG-HP-BONUS) (get-in s1 [:player :max-hp]))
+        "Max HP increased by BIG-HP-BONUS.")))
+
+(deftest levelup-pick-atk-applies-big-atk-bonus
+  (let [s0 (-> (f/explore-state)
+               (assoc :mode :levelup))
+        base-atk (get-in s0 [:player :attack])
+        s1 (core/step s0 :pick-atk)]
+    (is (= :explore (:mode s1)))
+    (is (= (+ base-atk ct/BIG-ATK-BONUS) (get-in s1 [:player :attack])))))
+
+(deftest levelup-pick-def-applies-big-def-bonus
+  (let [s0 (-> (f/explore-state)
+               (assoc :mode :levelup))
+        base-def (get-in s0 [:player :defense])
+        s1 (core/step s0 :pick-def)]
+    (is (= :explore (:mode s1)))
+    (is (= (+ base-def ct/BIG-DEF-BONUS) (get-in s1 [:player :defense])))))

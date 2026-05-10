@@ -516,3 +516,48 @@
           (for [_ :range [0 200]] nil))]
     (is (> stun-count 0)
         "Shocker applied stun at least once in 200 combat rounds.")))
+
+(deftest poison-bomb-damages-and-poisons-all-enemies
+  ;; Two enemies, 30 hp each. Poison bomb deals POISON-BOMB-DAMAGE to each and applies
+  ;; :poison VENOM-TURNS to each.
+  (let [e1 {:name "e1" :hp 30 :max-hp 30 :attack 0 :ability :none :lore ""}
+        e2 {:name "e2" :hp 30 :max-hp 30 :attack 0 :ability :none :lore ""}
+        s0 (-> (f/combat-state [e1 e2])
+               (update-in [:player :inventory] conj :poison-bomb))
+        s1 (core/step s0 :use-poison-bomb)]
+    (is (= (- 30 ct/POISON-BOMB-DAMAGE)
+           (get-in s1 [:combat :enemies 0 :hp]))
+        "First enemy took POISON-BOMB-DAMAGE.")
+    (is (= (- 30 ct/POISON-BOMB-DAMAGE)
+           (get-in s1 [:combat :enemies 1 :hp]))
+        "Second enemy took POISON-BOMB-DAMAGE.")
+    (is (= ct/VENOM-TURNS (get-in s1 [:combat :enemies 0 :poison] 0))
+        "First enemy poisoned.")
+    (is (= ct/VENOM-TURNS (get-in s1 [:combat :enemies 1 :poison] 0))
+        "Second enemy poisoned.")
+    (is (= 0 (count (get-in s1 [:player :inventory])))
+        "Poison bomb consumed.")))
+
+(deftest poison-bomb-kills-low-hp-enemies-and-ends-combat
+  ;; Enemy with hp exactly POISON-BOMB-DAMAGE — dies from bomb.
+  (let [e {:name "dying" :hp ct/POISON-BOMB-DAMAGE :max-hp ct/POISON-BOMB-DAMAGE
+           :attack 0 :ability :none :lore ""}
+        s0 (-> (f/combat-state [e])
+               (update-in [:player :inventory] conj :poison-bomb))
+        s1 (core/step s0 :use-poison-bomb)]
+    (is (= :explore (:mode s1)) "Combat ended — enemy killed by bomb.")
+    (is (= 1 (get-in s1 [:player :kills])) "Kill counted.")))
+
+(deftest stun-scroll-stuns-enemies-and-skips-their-attack
+  ;; Brute (attack 99) kills player (hp 30) if it attacks. Stun scroll prevents this.
+  (let [s0 (-> (f/combat-state [(f/brute)])
+               (update-in [:player :inventory] conj :stun-scroll))
+        s1 (core/step s0 :use-stun-scroll)]
+    (is (not= :gameover (:mode s1))
+        "Player survived — brute's attack was skipped due to stun.")
+    (is (= 0 (count (get-in s1 [:player :inventory])))
+        "Stun scroll consumed.")))
+
+(deftest parse-input-new-combat-keys
+  (is (= :use-poison-bomb  (core/parse-input "p" :combat)))
+  (is (= :use-stun-scroll  (core/parse-input "s" :combat))))

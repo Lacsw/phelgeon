@@ -1,4 +1,5 @@
-(ns tests\helpers\fixtures)
+(ns tests\helpers\fixtures
+  (:require phelgeon\content :as ct))
 
 ;; Hand-crafted states — bypass procgen so combat/explore/inventory tests
 ;; have a known room graph. Keys mirror what (make-initial-state) returns.
@@ -24,7 +25,8 @@
   []
   {:hp 30 :max-hp 30 :attack 5 :defense 1
    :inventory [] :gold 0
-   :kills 0 :biggest-hit 0 :potions-used 0})
+   :kills 0 :biggest-hit 0 :potions-used 0
+   :xp 0 :level 1 :xp-to-next ct/XP-BASE})
 
 (defn three-room-map
   "Linear graph: entrance — combat-room — exit."

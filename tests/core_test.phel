@@ -221,7 +221,8 @@
 
 (deftest use-bomb-instakills-and-tracks-kill
   (let [s0 (-> (f/combat-state [(f/brute)])
-               (update-in [:player :inventory] conj :bomb))
+               (update-in [:player :inventory] conj :bomb)
+               (assoc-in [:player :xp-to-next] 9999))  ; prevent level-up from brute's high xp
         s1 (core/step s0 :use-bomb)]
     (is (= :explore (:mode s1)))
     (is (= 1 (get-in s1 [:player :kills])))

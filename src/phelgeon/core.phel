@@ -210,7 +210,8 @@
                  :attack ct/START-ATTACK :defense ct/START-DEFENSE
                  :inventory []          ; vector of item keywords
                  :gold 0
-                 :kills 0 :biggest-hit 0 :potions-used 0}
+                 :kills 0 :biggest-hit 0 :potions-used 0
+                 :xp 0 :level 1 :xp-to-next ct/XP-BASE}
      :floor     1
      :floor-name (:floor-name g)
      :rooms     (:rooms g)
@@ -255,6 +256,9 @@
                    :noop)
       :inventory (case first-c
                    "1" :slot-1  "2" :slot-2  "b" :back  :noop)
+      :levelup   (case first-c
+                   "a" :pick-hp  "b" :pick-atk  "c" :pick-def
+                   :noop)
       :intro     :enter
       :gameover  :enter
       :victory   :enter
@@ -440,12 +444,46 @@
       (assoc state :mode :victory)
       (assoc state :mode :explore))))
 
+(defn- combat-xp [enemies]
+  ;; Boss gives 2× XP; regular enemies give max-hp each.
+  (let [xp-raw (reduce (fn [s e] (+ s (:max-hp e))) 0 enemies)
+        boss?  (get (first enemies) :boss? false)]
+    (if boss? (* 2 xp-raw) xp-raw)))
+
+(defn- maybe-level-up [state]
+  (let [p (:player state)]
+    (if (< (:xp p) (:xp-to-next p))
+      state
+      (let [new-level  (inc (:level p))
+            new-max-hp (+ (:max-hp p) ct/LEVEL-HP-BONUS)
+            new-atk    (+ (:attack p) ct/LEVEL-ATK-BONUS)
+            new-xp-to  (int (* (:xp-to-next p) ct/XP-SCALE))
+            p2 (-> p
+                   (assoc :level new-level)
+                   (assoc :max-hp new-max-hp)
+                   (update :hp (fn [h] (min new-max-hp (+ h ct/LEVEL-HP-BONUS))))
+                   (assoc :attack new-atk)
+                   (update :xp (fn [x] (- x (:xp-to-next p))))
+                   (assoc :xp-to-next new-xp-to))
+            s2 (-> state
+                   (assoc :player p2)
+                   (log (str "Level up! You are now level " new-level ".")))]
+        (if (zero? (mod new-level ct/BIG-LEVEL-EVERY))
+          (assoc s2 :mode :levelup)
+          (maybe-level-up s2))))))
+
 (defn- end-combat-victory [state]
-  (-> state
-      (assoc :combat nil)
-      (mark-room-cleared)
-      (log "All enemies fall.")
-      (maybe-victory)))
+  (let [enemies (get-in state [:combat :enemies])
+        xp (combat-xp enemies)
+        s1 (-> state
+               (assoc :combat nil)
+               (mark-room-cleared)
+               (update-in [:player :xp] (fn [x] (+ x xp)))
+               (log "All enemies fall.")
+               (maybe-victory))]
+    (if (= (:mode s1) :victory)
+      s1
+      (maybe-level-up s1))))
 
 ;; =============================================================================
 ;; Status effects — tick runs at the start of every combat round
@@ -741,6 +779,31 @@
       :slot-2 (do-use-heal-explore state)
       :back   (assoc state :mode :explore)
       :noop   state
+      state)
+
+    :levelup
+    (case cmd
+      :pick-hp
+      (let [new-max (+ (get-in state [:player :max-hp]) ct/BIG-HP-BONUS)]
+        (-> state
+            (assoc-in [:player :max-hp] new-max)
+            (update-in [:player :hp] (fn [h] (min new-max (+ h ct/BIG-HP-BONUS))))
+            (assoc :mode :explore)
+            (log (str "You feel vitalized. +" ct/BIG-HP-BONUS " max HP."))
+            (maybe-level-up)))
+      :pick-atk
+      (-> state
+          (update-in [:player :attack] (fn [a] (+ a ct/BIG-ATK-BONUS)))
+          (assoc :mode :explore)
+          (log (str "Your strikes sharpen. +" ct/BIG-ATK-BONUS " attack."))
+          (maybe-level-up))
+      :pick-def
+      (-> state
+          (update-in [:player :defense] (fn [d] (+ d ct/BIG-DEF-BONUS)))
+          (assoc :mode :explore)
+          (log (str "Your skin toughens. +" ct/BIG-DEF-BONUS " defense."))
+          (maybe-level-up))
+      :noop state
       state)
 
     state))

@@ -40,6 +40,16 @@
 (def INFERNO-TURNS 2)        ; burn turns applied by :inferno ability
 (def POISON-BOMB-DAMAGE 15)  ; flat damage dealt to all enemies
 
+;; XP / Leveling
+(def XP-BASE         30)   ; xp-to-next at level 1
+(def XP-SCALE        1.5)  ; xp-to-next multiplier each level
+(def BIG-LEVEL-EVERY 3)    ; every Nth level triggers the choice prompt
+(def LEVEL-HP-BONUS  10)   ; auto-bump: max-hp per level
+(def LEVEL-ATK-BONUS 1)    ; auto-bump: attack per level
+(def BIG-HP-BONUS    15)   ; choice: +max-hp
+(def BIG-ATK-BONUS   3)    ; choice: +attack
+(def BIG-DEF-BONUS   2)    ; choice: +defense
+
 ;; Enemy abilities:
 ;;   :none    — vanilla
 ;;   :tough   — when hit, 30% chance to halve incoming damage

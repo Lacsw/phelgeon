@@ -60,7 +60,13 @@
    {:name "Cave rat"  :hp 8  :attack 4  :ability :none
     :lore "lean and yellow-toothed, eyes like wet stones"}
    {:name "Wraith"    :hp 30 :attack 10 :ability :phase
-    :lore "a held breath given shape, all teeth and chill"}])
+    :lore "a held breath given shape, all teeth and chill"}
+   {:name "Venomfang" :hp 12 :attack 6  :ability :venom
+    :lore "needle-fanged and patient, leaving a slow gift in every wound"}
+   {:name "Shocker"   :hp 22 :attack 9  :ability :shocker
+    :lore "crackles with stolen lightning, eyes white and distant"}
+   {:name "Infernal"  :hp 35 :attack 13 :ability :inferno
+    :lore "ember-skinned, smelling of scorched hair and old fury"}])
 
 ;; Floor-3 boss: randomly chosen for replay variety. Each has a legend.
 (def BOSSES

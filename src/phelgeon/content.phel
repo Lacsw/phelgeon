@@ -36,6 +36,8 @@
 ;; Status effect damage per turn
 (def BURN-DAMAGE 3)          ; flat HP per turn
 (def POISON-PCT  5)          ; % of max-hp per turn (integer math)
+(def VENOM-TURNS   3)        ; poison turns applied by :venom ability
+(def INFERNO-TURNS 2)        ; burn turns applied by :inferno ability
 
 ;; Enemy abilities:
 ;;   :none    — vanilla
@@ -43,6 +45,9 @@
 ;;   :fury    — 30% chance per attack to deal double damage
 ;;   :caster  — every attack does fixed CASTER-DAMAGE, ignoring jitter
 ;;   :phase   — every attack ignores the player's defense
+;;   :venom   — on hit, applies :poison VENOM-TURNS to the player
+;;   :shocker — on hit, 30% chance to apply :stun 1 to the player
+;;   :inferno — on hit, applies :burn INFERNO-TURNS to the player
 (def ENEMY-POOL
   [{:name "Goblin"    :hp 15 :attack 5  :ability :none
     :lore "small, mean, and patient with hunger"}

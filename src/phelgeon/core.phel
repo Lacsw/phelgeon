@@ -400,6 +400,17 @@
         {:dmg (max 1 after-def)
          :flavor (cond fury? :fury phase? :phase :else :normal)}))))
 
+(defn- apply-enemy-status [state attacker]
+  ;; Called after the enemy's hit lands. Applies status based on ability.
+  (let [a (:ability attacker)]
+    (case a
+      :venom   (assoc-in state [:player :poison] ct/VENOM-TURNS)
+      :inferno (assoc-in state [:player :burn] ct/INFERNO-TURNS)
+      :shocker (if (rand-percent? ct/ABILITY-CHANCE)
+                 (assoc-in state [:player :stun] 1)
+                 state)
+      state)))
+
 ;; =============================================================================
 ;; Combat helpers
 ;; =============================================================================
@@ -507,10 +518,11 @@
                            (str "The " (:name attacker) " hits you for " dmg " damage."))
                 s2 (-> state
                        (assoc-in [:player :hp] new-hp)
-                       (log base-msg))]
+                       (log base-msg))
+                s3 (apply-enemy-status s2 attacker)]
             (if (<= new-hp 0)
-              (assoc s2 :mode :gameover)
-              s2)))))))
+              (assoc s3 :mode :gameover)
+              s3)))))))
 
 (defn- do-attack [state]
   (let [s1 (start-round state)]

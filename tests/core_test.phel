@@ -486,3 +486,33 @@
         "Player survived — brute was stunned and skipped its attack.")
     (is (= 0 (get-in s1 [:combat :enemies 0 :stun] 0))
         "Enemy stun decremented to 0.")))
+
+(deftest venom-ability-poisons-player-on-hit
+  ;; Enemy with :venom and attack 0 hits player for 1 damage and applies :poison VENOM-TURNS.
+  (let [venom-enemy {:name "Venomfang" :hp 999 :max-hp 999 :attack 0 :ability :venom :lore ""}
+        s0 (f/combat-state [venom-enemy])
+        s1 (core/step s0 :attack)]
+    (is (= ct/VENOM-TURNS (get-in s1 [:player :poison] 0))
+        "Venom ability applied :poison VENOM-TURNS to player.")))
+
+(deftest inferno-ability-burns-player-on-hit
+  (let [inferno-enemy {:name "Infernal" :hp 999 :max-hp 999 :attack 0 :ability :inferno :lore ""}
+        s0 (f/combat-state [inferno-enemy])
+        s1 (core/step s0 :attack)]
+    (is (= ct/INFERNO-TURNS (get-in s1 [:player :burn] 0))
+        "Inferno ability applied :burn INFERNO-TURNS to player.")))
+
+(deftest shocker-ability-can-stun-player
+  ;; :shocker has ABILITY-CHANCE% (30%) to stun. Run 200 attempts; at least one stun expected.
+  ;; P(zero stuns in 200 trials at 30%) < 0.00001%.
+  (let [shocker-enemy {:name "Shocker" :hp 999 :max-hp 999 :attack 0 :ability :shocker :lore ""}
+        stun-count
+        (reduce
+          (fn [n _]
+            (let [s0 (f/combat-state [shocker-enemy])
+                  s1 (core/step s0 :attack)]
+              (+ n (get-in s1 [:player :stun] 0))))
+          0
+          (for [_ :range [0 200]] nil))]
+    (is (> stun-count 0)
+        "Shocker applied stun at least once in 200 combat rounds.")))

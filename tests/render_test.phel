@@ -1,0 +1,39 @@
+(ns tests.end-render-test
+  (:require phel.test :refer [deftest is])
+  (:require phelgeon.render :as r)
+  (:require tests.helpers.fixtures :as f))
+
+(deftest render-gameover-no-error
+  (let [s (assoc (f/explore-state) :mode :gameover)
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-victory-no-error
+  (let [s (assoc (f/explore-state) :mode :victory)
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-quit-no-error
+  (let [s (assoc (f/explore-state) :mode :quit)
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-intro-no-error
+  (let [s (assoc (f/explore-state) :mode :intro)
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-combat-no-error
+  (let [s (f/combat-state [(f/weak-goblin)])
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-inventory-no-error
+  (let [s (assoc (f/explore-state) :mode :inventory)
+        out (r/render s)]
+    (is (> (count out) 0))))
+
+(deftest render-levelup-no-error
+  (let [s (assoc (f/explore-state) :mode :levelup)
+        out (r/render s)]
+    (is (> (count out) 0))))

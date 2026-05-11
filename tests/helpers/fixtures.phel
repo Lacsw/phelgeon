@@ -1,5 +1,5 @@
-(ns tests\helpers\fixtures
-  (:require phelgeon\content :as ct))
+(ns tests.helpers.fixtures
+  (:require phelgeon.content :as ct))
 
 ;; Hand-crafted states — bypass procgen so combat/explore/inventory tests
 ;; have a known room graph. Keys mirror what (make-initial-state) returns.

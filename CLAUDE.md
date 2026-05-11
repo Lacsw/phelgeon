@@ -10,12 +10,12 @@ src/phelgeon/
   core.phel      pure game engine — state, procgen, combat, step.
   content.phel   pure data — constants, enemies, loot, descriptions, lore, intro.
   render.phel    pure ANSI frame builders.
-phel-config.php  flat layout, mainNamespace = phelgeon\main.
+phel-config.php  flat layout, mainNamespace = phelgeon.main.
 docs/superpowers/specs/  brainstorming spec for the redesign (gitignored).
 docs/superpowers/plans/  implementation plan (gitignored).
 ```
 
-`composer start` runs `phel run phelgeon\\main`. The `(main)` form at the bottom of `main.phel` is the entrypoint.
+`composer start` runs `phel run phelgeon.main`. The `(main)` form at the bottom of `main.phel` is the entrypoint.
 
 ## Code style
 
@@ -60,7 +60,7 @@ docs/superpowers/plans/  implementation plan (gitignored).
 |---|---|
 | Compile-check all namespaces | `./vendor/bin/phel build` |
 | Force fresh build | `./vendor/bin/phel cache:clear && ./vendor/bin/phel build` |
-| Smoke-run with piped input | `printf 'q' \| ./vendor/bin/phel run phelgeon\\main` |
+| Smoke-run with piped input | `printf 'q' \| ./vendor/bin/phel run phelgeon.main` |
 | Inspect runtime errors | `cat /tmp/phel-error.log` (default error log) |
 | Strip ANSI for diff-able output | `LC_ALL=C sed 's/\x1b[^a-zA-Z]*[a-zA-Z]//g'` |
 

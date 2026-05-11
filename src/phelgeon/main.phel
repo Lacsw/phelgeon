@@ -1,8 +1,8 @@
-(ns phelgeon\main
-  (:require phel\string :as s)
-  (:require phelgeon\core :as c)
-  (:require phelgeon\render :as r)
-  (:require phelgeon\content :as ct))
+(ns phelgeon.main
+  (:require phel.string :as s)
+  (:require phelgeon.core :as c)
+  (:require phelgeon.render :as r)
+  (:require phelgeon.content :as ct))
 
 ;; -----------------------------------------------------------------------------
 ;; Terminal lifecycle: alternate-screen buffer + raw-mode (cbreak) input.

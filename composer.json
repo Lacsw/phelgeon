@@ -5,11 +5,12 @@
     "license": "MIT",
     "require": {
         "php": ">=8.4",
-        "phel-lang/phel-lang": "^0.36",
-        "chemaclass/phel-cli-gui": "^0.10"
+        "phel-lang/phel-lang": "dev-main as 0.36.x-dev"
     },
+    "prefer-stable": true,
+    "minimum-stability": "dev",
     "scripts": {
-        "start": "phel run phelgeon\\\\main",
+        "start": "phel run phelgeon.main",
         "test": "phel test"
     }
 }

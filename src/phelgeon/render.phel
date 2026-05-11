@@ -1,6 +1,6 @@
-(ns phelgeon\render
-  (:require phel\string :as s)
-  (:require phelgeon\content :as ct))
+(ns phelgeon.render
+  (:require phel.string :as s)
+  (:require phelgeon.content :as ct))
 
 ;; =============================================================================
 ;; ANSI helpers (16-colour)
@@ -41,7 +41,7 @@
 (defn hp-bar [hp max-hp]
   (let [w ct/HP-BAR-WIDTH
         ratio (if (<= max-hp 0) 0 (max 0 (min 1 (/ hp max-hp))))
-        filled (php/intval (* w ratio))
+        filled (int (* w ratio))
         empty-cells (- w filled)
         full (bar-color ratio (repeat-str "█" filled))
         rest (dim (repeat-str "░" empty-cells))]
@@ -305,7 +305,7 @@
 
 (defn- center [text]
   (let [n (count text)
-        pad (max 0 (php/intval (/ (- ct/CONTENT-WIDTH n) 2)))]
+        pad (max 0 (quot (- ct/CONTENT-WIDTH n) 2))]
     (str (php/str_repeat " " pad) text)))
 
 (defn- intro-frame [_state]

@@ -1,8 +1,8 @@
-(ns tests\core-test
-  (:require phel\test :refer [deftest is])
-  (:require phelgeon\core :as core)
-  (:require tests\helpers\fixtures :as f)
-  (:require phelgeon\content :as ct))
+(ns tests.core-test
+  (:require phel.test :refer [deftest is])
+  (:require phelgeon.core :as core)
+  (:require tests.helpers.fixtures :as f)
+  (:require phelgeon.content :as ct))
 
 (deftest parse-input-explore-directions
   (is (= :north (core/parse-input "n" :explore)))

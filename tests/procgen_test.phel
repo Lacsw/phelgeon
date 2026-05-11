@@ -1,7 +1,7 @@
-(ns tests\procgen-test
-  (:require phel\test :refer [deftest is])
-  (:require phelgeon\core :as core)
-  (:require phelgeon\content :as ct))
+(ns tests.procgen-test
+  (:require phel.test :refer [deftest is])
+  (:require phelgeon.core :as core)
+  (:require phelgeon.content :as ct))
 
 (defn- bfs-reachable
   "Return the set of room ids reachable from `start` over `:exits`."

@@ -4,6 +4,6 @@ use Phel\Config\PhelConfig;
 use Phel\Config\ProjectLayout;
 
 return PhelConfig::forProject(
-    mainNamespace: 'phelgeon\main', 
-    layout: ProjectLayout::Flat
+    layout: ProjectLayout::Flat,
+    mainNamespace: 'phelgeon.main',
 );

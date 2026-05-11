@@ -1,6 +1,6 @@
-(ns phelgeon\core
-  (:require phel\string :as s)
-  (:require phelgeon\content :as ct))
+(ns phelgeon.core
+  (:require phel.string :as s)
+  (:require phelgeon.content :as ct))
 
 ;; =============================================================================
 ;; RNG wrappers — Phel's `rand-int` is INCLUSIVE (PHP random_int(0, n)).

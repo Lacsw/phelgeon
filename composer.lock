@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c5bb96a3885e831079576e44dc183fa0",
+    "content-hash": "5330629c0eb6cb17bb662a57f350f601",
     "packages": [
         {
             "name": "amphp/amp",
@@ -86,64 +86,6 @@
                 }
             ],
             "time": "2025-08-27T21:42:00+00:00"
-        },
-        {
-            "name": "chemaclass/phel-cli-gui",
-            "version": "0.10.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Chemaclass/phel-cli-gui.git",
-                "reference": "58aedf524870df45897de3e165492a6563f4ea93"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Chemaclass/phel-cli-gui/zipball/58aedf524870df45897de3e165492a6563f4ea93",
-                "reference": "58aedf524870df45897de3e165492a6563f4ea93",
-                "shasum": ""
-            },
-            "require": {
-                "ext-pcntl": "*",
-                "ext-posix": "*",
-                "ext-readline": "*",
-                "phel-lang/phel-lang": "^0.34 || ^0.36",
-                "php": ">=8.3",
-                "symfony/console": "^7.4"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^10.5",
-                "roave/security-advisories": "dev-latest",
-                "symfony/var-dumper": "^7.4"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "PhelCliGui\\": "src/php/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jose M Valera Reales",
-                    "email": "chemaclass@outlook.es",
-                    "homepage": "https://chemaclass.com"
-                }
-            ],
-            "description": "Phel functions to render in the terminal. It uses the Cursor from the Symfony Command module.",
-            "homepage": "https://phel-lang.org/",
-            "keywords": [
-                "functional",
-                "language",
-                "lisp",
-                "phel"
-            ],
-            "support": {
-                "issues": "https://github.com/Chemaclass/phel-cli-gui/issues",
-                "source": "https://github.com/Chemaclass/phel-cli-gui/tree/0.10.0"
-            },
-            "time": "2026-05-08T15:59:34+00:00"
         },
         {
             "name": "gacela-project/container",
@@ -300,16 +242,16 @@
         },
         {
             "name": "phel-lang/phel-lang",
-            "version": "v0.36.0",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phel-lang/phel-lang.git",
-                "reference": "303d12316cf8b1e72c9e29191018c2bc13d4a0d3"
+                "reference": "ffba9b260645355ac650e1621dc881629b52a1f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/303d12316cf8b1e72c9e29191018c2bc13d4a0d3",
-                "reference": "303d12316cf8b1e72c9e29191018c2bc13d4a0d3",
+                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/ffba9b260645355ac650e1621dc881629b52a1f3",
+                "reference": "ffba9b260645355ac650e1621dc881629b52a1f3",
                 "shasum": ""
             },
             "require": {
@@ -331,6 +273,7 @@
                 "symfony/var-dumper": "^7.4",
                 "vimeo/psalm": "^6.16"
             },
+            "default-branch": true,
             "bin": [
                 "bin/phel"
             ],
@@ -368,7 +311,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phel-lang/phel-lang/issues",
-                "source": "https://github.com/phel-lang/phel-lang/tree/v0.36.0"
+                "source": "https://github.com/phel-lang/phel-lang/tree/main"
             },
             "funding": [
                 {
@@ -376,7 +319,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-05-08T06:40:37+00:00"
+            "time": "2026-05-11T22:58:05+00:00"
         },
         {
             "name": "psr/container",
@@ -505,47 +448,39 @@
         },
         {
             "name": "symfony/console",
-            "version": "v7.4.9",
+            "version": "v8.0.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "d7d2b64a45a89d607865927b176fa51c33ddbb58"
+                "reference": "7113778e2e91f4709cb3194a75dfa9c0d028d94d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/d7d2b64a45a89d607865927b176fa51c33ddbb58",
-                "reference": "d7d2b64a45a89d607865927b176fa51c33ddbb58",
+                "url": "https://api.github.com/repos/symfony/console/zipball/7113778e2e91f4709cb3194a75dfa9c0d028d94d",
+                "reference": "7113778e2e91f4709cb3194a75dfa9c0d028d94d",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.2",
-                "symfony/deprecation-contracts": "^2.5|^3",
-                "symfony/polyfill-mbstring": "~1.0",
+                "php": ">=8.4",
+                "symfony/polyfill-mbstring": "^1.0",
                 "symfony/service-contracts": "^2.5|^3",
-                "symfony/string": "^7.2|^8.0"
-            },
-            "conflict": {
-                "symfony/dependency-injection": "<6.4",
-                "symfony/dotenv": "<6.4",
-                "symfony/event-dispatcher": "<6.4",
-                "symfony/lock": "<6.4",
-                "symfony/process": "<6.4"
+                "symfony/string": "^7.4|^8.0"
             },
             "provide": {
                 "psr/log-implementation": "1.0|2.0|3.0"
             },
             "require-dev": {
                 "psr/log": "^1|^2|^3",
-                "symfony/config": "^6.4|^7.0|^8.0",
-                "symfony/dependency-injection": "^6.4|^7.0|^8.0",
-                "symfony/event-dispatcher": "^6.4|^7.0|^8.0",
-                "symfony/http-foundation": "^6.4|^7.0|^8.0",
-                "symfony/http-kernel": "^6.4|^7.0|^8.0",
-                "symfony/lock": "^6.4|^7.0|^8.0",
-                "symfony/messenger": "^6.4|^7.0|^8.0",
-                "symfony/process": "^6.4|^7.0|^8.0",
-                "symfony/stopwatch": "^6.4|^7.0|^8.0",
-                "symfony/var-dumper": "^6.4|^7.0|^8.0"
+                "symfony/config": "^7.4|^8.0",
+                "symfony/dependency-injection": "^7.4|^8.0",
+                "symfony/event-dispatcher": "^7.4|^8.0",
+                "symfony/http-foundation": "^7.4|^8.0",
+                "symfony/http-kernel": "^7.4|^8.0",
+                "symfony/lock": "^7.4|^8.0",
+                "symfony/messenger": "^7.4|^8.0",
+                "symfony/process": "^7.4|^8.0",
+                "symfony/stopwatch": "^7.4|^8.0",
+                "symfony/var-dumper": "^7.4|^8.0"
             },
             "type": "library",
             "autoload": {
@@ -579,7 +514,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v7.4.9"
+                "source": "https://github.com/symfony/console/tree/v8.0.9"
             },
             "funding": [
                 {
@@ -599,7 +534,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-22T15:21:55+00:00"
+            "time": "2026-04-29T15:02:55+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -1271,14 +1206,23 @@
         }
     ],
     "packages-dev": [],
-    "aliases": [],
-    "minimum-stability": "stable",
-    "stability-flags": {},
-    "prefer-stable": false,
+    "aliases": [
+        {
+            "package": "phel-lang/phel-lang",
+            "version": "dev-main",
+            "alias": "0.36.x-dev",
+            "alias_normalized": "0.36.9999999.9999999-dev"
+        }
+    ],
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "phel-lang/phel-lang": 20
+    },
+    "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": ">=8.4"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

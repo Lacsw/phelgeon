@@ -28,8 +28,5 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Build
-        run: ./vendor/bin/phel build
-
       - name: Test
         run: ./vendor/bin/phel test

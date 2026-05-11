@@ -4,6 +4,7 @@
 *.phar
 .phpunit.result.cache
 phel-config-local.php
+.claude/scheduled_tasks.lock
 
 # superpowers brainstorming/plan artefacts — local notes only
 /docs/superpowers/

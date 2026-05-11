@@ -5,7 +5,7 @@ Turn-based, room-graph CLI dungeon crawler written in **Phel** (Lisp on PHP). Se
 ## File layout
 
 ```
-src/phelgeon/
+src/
   main.phel      terminal lifecycle + prompt loop. ONLY file with I/O.
   core.phel      pure game engine — state, procgen, combat, step.
   content.phel   pure data — constants, enemies, loot, descriptions, lore, intro.
@@ -14,6 +14,8 @@ phel-config.php  flat layout, mainNamespace = phelgeon.main.
 docs/superpowers/specs/  brainstorming spec for the redesign (gitignored).
 docs/superpowers/plans/  implementation plan (gitignored).
 ```
+
+Files sit directly under `src/`; namespaces stay `phelgeon.X` (Phel parses `(ns …)` from the file content, the path doesn't have to mirror the ns).
 
 `composer start` runs `phel run phelgeon.main`. The `(main)` form at the bottom of `main.phel` is the entrypoint.
 

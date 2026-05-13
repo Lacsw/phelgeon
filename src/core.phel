@@ -1,6 +1,6 @@
-(ns phelgeon\core
-  (:require phel\string :as s)
-  (:require phelgeon\content :as ct))
+(ns phelgeon.core
+  (:require phel.string :as s)
+  (:require phelgeon.content :as ct))
 
 ;; =============================================================================
 ;; RNG wrappers — Phel's `rand-int` is INCLUSIVE (PHP random_int(0, n)).
@@ -10,15 +10,15 @@
 (defn- rand-pick [v]
   (get v (rand-int (dec (count v)))))
 
-(defn- rand-range [lo hi]
+(defn- ^int rand-range [^int lo ^int hi]
   ;; Inclusive both ends
   (+ lo (rand-int (- hi lo))))
 
-(defn- rand-percent? [pct]
+(defn- rand-percent? [^int pct]
   ;; True with `pct`% probability
   (< (rand-int 99) pct))
 
-(defn- jitter [base pct]
+(defn- ^int jitter [^int base ^int pct]
   ;; base ± pct% (integer math)
   (let [delta (quot (* base pct) 100)]
     (if (<= delta 0)
@@ -31,7 +31,7 @@
 
 (defn- log [state msg]
   (let [msgs (vec (concat (:log state) [msg]))
-        n (count msgs)
+        n    (count msgs)
         kept (if (<= n ct/MAX-LOG-LINES)
                msgs
                (vec (drop (- n ct/MAX-LOG-LINES) msgs)))]
@@ -54,10 +54,10 @@
   [:combat :combat :combat :treasure :rest])
 
 (defn- pick-room-types [n final?]
-  (let [bag (room-type-bag final?)
+  (let [bag       (room-type-bag final?)
         last-type (if final? :boss :exit)
-        filler (- n 2)
-        middle (vec (for [_ :range [0 filler]] (rand-pick bag)))]
+        filler    (- n 2)
+        middle    (vec (for [_ :range [0 filler]] (rand-pick bag)))]
     (vec (concat [:entrance] middle [last-type]))))
 
 (defn- ids-for [n]
@@ -74,7 +74,7 @@
 (defn- empty-rooms [ids types]
   (for [i :range [0 (count ids)] :reduce [m {}]]
     (assoc m (get ids i)
-             {:id (get ids i) :type (get types i) :exits {} :cleared false :trap false})))
+           {:id (get ids i) :type (get types i) :exits {} :cleared false :trap false})))
 
 (defn- add-edge [rooms a b dir-a]
   (-> rooms
@@ -87,15 +87,15 @@
 
 (defn- connect-spanning-path [rooms ids]
   (for [i :range [0 (dec (count ids))] :reduce [m rooms]]
-    (let [a (get ids i)
-          b (get ids (inc i))
-          ra (get m a)
-          rb (get m b)
+    (let [a     (get ids i)
+          b     (get ids (inc i))
+          ra    (get m a)
+          rb    (get m b)
           dir-a (free-dir ra)]
       (cond
-        (nil? dir-a) m
+        (nil? dir-a)                                          m
         (contains? (set (keys (:exits rb))) (opposite dir-a)) m
-        :else (add-edge m a b dir-a)))))
+        :else                                                 (add-edge m a b dir-a)))))
 
 (defn- non-adjacent-pairs [rooms ids]
   (for [i :range [0 (count ids)]
@@ -111,28 +111,28 @@
         pairs  (non-adjacent-pairs rooms ids)]
     (loop [m rooms remaining extras pool pairs]
       (cond
-        (zero? remaining) m
+        (zero? remaining)    m
         (zero? (count pool)) m
-        :else (let [pick-idx (rand-int (dec (count pool)))
-                    [a b] (get pool pick-idx)
-                    next-pool (vec (concat (take pick-idx pool)
-                                           (drop (inc pick-idx) pool)))
-                    ra (get m a)
-                    rb (get m b)
-                    dir-a (free-dir ra)]
-                (if (and dir-a
-                         (not (contains? (set (keys (:exits rb))) (opposite dir-a))))
-                  (recur (add-edge m a b dir-a) (dec remaining) next-pool)
-                  (recur m remaining next-pool)))))))
+        :else                (let [pick-idx  (rand-int (dec (count pool)))
+                                   [a b]     (get pool pick-idx)
+                                   next-pool (vec (concat (take pick-idx pool)
+                                                          (drop (inc pick-idx) pool)))
+                                   ra        (get m a)
+                                   rb        (get m b)
+                                   dir-a     (free-dir ra)]
+                               (if (and dir-a
+                                        (not (contains? (set (keys (:exits rb))) (opposite dir-a))))
+                                 (recur (add-edge m a b dir-a) (dec remaining) next-pool)
+                                 (recur m remaining next-pool)))))))
 
-(defn- scale-stat [base mult]
+(defn- ^int scale-stat [^int base mult]
   (max 1 (int (* (jitter base ct/STAT-JITTER-PCT) mult))))
 
 (defn- build-enemy [floor]
   (let [tmpl (rand-pick ct/ENEMY-POOL)
         mult (get ct/FLOOR-MULT (dec floor))
-        hp (scale-stat (:hp tmpl) mult)
-        atk (scale-stat (:attack tmpl) mult)]
+        hp   (scale-stat (:hp tmpl) mult)
+        atk  (scale-stat (:attack tmpl) mult)]
     {:name (:name tmpl)
      :hp hp :max-hp hp :attack atk
      :ability (:ability tmpl)
@@ -141,8 +141,8 @@
 (defn- build-boss [floor]
   (let [tmpl (rand-pick ct/BOSSES)
         mult (get ct/FLOOR-MULT (dec floor))
-        hp (max 1 (int (* (:hp tmpl) mult)))
-        atk (max 1 (int (* (:attack tmpl) mult)))]
+        hp   (max 1 (int (* (:hp tmpl) mult)))
+        atk  (max 1 (int (* (:attack tmpl) mult)))]
     {:name    (:name tmpl)
      :title   (:title tmpl)
      :lore    (:lore tmpl)
@@ -171,31 +171,31 @@
 
 (defn- fill-content [rooms floor]
   (for [id :in (keys rooms) :reduce [m rooms]]
-    (let [r (get m id)
-          t (:type r)
-          desc (rand-pick (get ct/DESCRIPTIONS t))
+    (let [r         (get m id)
+          t         (:type r)
+          desc      (rand-pick (get ct/DESCRIPTIONS t))
           with-desc (assoc r :description desc)
-          filled (case t
-                   :combat   (assoc with-desc :enemies (build-enemies floor))
-                   :boss     (assoc with-desc :enemies [(build-boss floor)])
-                   :treasure (assoc with-desc :loot (build-loot))
-                   with-desc)
-          trapped (maybe-add-trap filled)]
+          filled    (case t
+                      :combat   (assoc with-desc :enemies (build-enemies floor))
+                      :boss     (assoc with-desc :enemies [(build-boss floor)])
+                      :treasure (assoc with-desc :loot (build-loot))
+                      with-desc)
+          trapped   (maybe-add-trap filled)]
       (assoc m id trapped))))
 
 (defn- pick-floor-name [floor]
   (rand-pick (get ct/FLOOR-NAMES (dec floor))))
 
 (defn gen-floor [floor]
-  (let [final? (= floor ct/FINAL-FLOOR)
-        n (rand-range ct/ROOMS-PER-FLOOR-MIN ct/ROOMS-PER-FLOOR-MAX)
-        types (pick-room-types n final?)
-        ids-raw (ids-for n)
-        ids (finalize-ids ids-raw final?)
-        bare (empty-rooms ids types)
-        spanned (connect-spanning-path bare ids)
+  (let [final?    (= floor ct/FINAL-FLOOR)
+        n         (rand-range ct/ROOMS-PER-FLOOR-MIN ct/ROOMS-PER-FLOOR-MAX)
+        types     (pick-room-types n final?)
+        ids-raw   (ids-for n)
+        ids       (finalize-ids ids-raw final?)
+        bare      (empty-rooms ids types)
+        spanned   (connect-spanning-path bare ids)
         connected (maybe-add-extra-edges spanned ids)
-        filled (fill-content connected floor)]
+        filled    (fill-content connected floor)]
     {:rooms filled
      :ids   ids
      :floor-name (pick-floor-name floor)}))
@@ -226,7 +226,7 @@
 
 (defn- descend [state]
   (let [next-floor (inc (:floor state))
-        g (gen-floor next-floor)]
+        g          (gen-floor next-floor)]
     (-> state
         (assoc :floor next-floor)
         (assoc :floor-name (:floor-name g))
@@ -242,7 +242,7 @@
 ;; =============================================================================
 
 (defn parse-input [raw mode]
-  (let [c (s/lower-case (s/trim (or raw "")))
+  (let [c       (s/lower-case (s/trim (or raw "")))
         first-c (if (s/blank? c) "" (s/subs c 0 1))]
     (case mode
       :explore   (case first-c
@@ -269,7 +269,7 @@
 ;; Inventory helpers
 ;; =============================================================================
 
-(defn- count-of [item inv]
+(defn- ^int count-of [item inv]
   (count (filter (fn [i] (= i item)) inv)))
 
 (defn- has? [item player]
@@ -288,12 +288,12 @@
 
 (defn- apply-loot [state loot]
   (case (:item loot)
-    :potion (-> state
-                (update-in [:player :inventory] conj :potion)
-                (log "You found a health potion."))
-    :bomb   (-> state
-                (update-in [:player :inventory] conj :bomb)
-                (log "You found a bomb."))
+    :potion      (-> state
+                     (update-in [:player :inventory] conj :potion)
+                     (log "You found a health potion."))
+    :bomb        (-> state
+                     (update-in [:player :inventory] conj :bomb)
+                     (log "You found a bomb."))
     :poison-bomb (-> state
                      (update-in [:player :inventory] conj :poison-bomb)
                      (log "You found a poison bomb."))
@@ -303,34 +303,34 @@
     :scroll-heal (-> state
                      (update-in [:player :inventory] conj :scroll-heal)
                      (log "You found a scroll of healing."))
-    :sword  (-> state
-                (update-in [:player :attack] (fn [a] (+ a ct/SWORD-BONUS)))
-                (log (str "You found an iron sword. +" ct/SWORD-BONUS " attack.")))
-    :armor  (-> state
-                (update-in [:player :defense] (fn [d] (+ d ct/ARMOR-BONUS)))
-                (log (str "You found leather armor. +" ct/ARMOR-BONUS " defense.")))
-    :gold   (-> state
-                (update-in [:player :gold] (fn [g] (+ g (:gold loot))))
-                (log (str "You found " (:gold loot) " gold.")))))
+    :sword       (-> state
+                     (update-in [:player :attack] (fn [a] (+ a ct/SWORD-BONUS)))
+                     (log (str "You found an iron sword. +" ct/SWORD-BONUS " attack.")))
+    :armor       (-> state
+                     (update-in [:player :defense] (fn [d] (+ d ct/ARMOR-BONUS)))
+                     (log (str "You found leather armor. +" ct/ARMOR-BONUS " defense.")))
+    :gold        (-> state
+                     (update-in [:player :gold] (fn [g] (+ g (:gold loot))))
+                     (log (str "You found " (:gold loot) " gold.")))))
 
 ;; =============================================================================
 ;; Trap
 ;; =============================================================================
 
-(defn- format-trap-msg [tmpl dmg]
+(defn- ^string format-trap-msg [^string tmpl ^int dmg]
   (s/replace tmpl "{N}" (str dmg)))
 
 (defn- maybe-fire-trap [state room-id]
   (let [room (get-in state [:rooms room-id])]
     (if (not (:trap room))
       state
-      (let [dmg (rand-range ct/TRAP-DAMAGE-MIN ct/TRAP-DAMAGE-MAX)
-            tmpl (rand-pick ct/TRAP-MESSAGES)
+      (let [dmg    (rand-range ct/TRAP-DAMAGE-MIN ct/TRAP-DAMAGE-MAX)
+            tmpl   (rand-pick ct/TRAP-MESSAGES)
             new-hp (- (get-in state [:player :hp]) dmg)
-            s2 (-> state
-                   (assoc-in [:player :hp] new-hp)
-                   (assoc-in [:rooms room-id :trap] false)
-                   (log (format-trap-msg tmpl dmg)))]
+            s2     (-> state
+                       (assoc-in [:player :hp] new-hp)
+                       (assoc-in [:rooms room-id :trap] false)
+                       (log (format-trap-msg tmpl dmg)))]
         (if (<= new-hp 0)
           (assoc s2 :mode :gameover)
           s2)))))
@@ -340,12 +340,12 @@
 ;; =============================================================================
 
 (defn- enter-room [state room-id]
-  (let [moved (-> state
-                  (assoc :current room-id)
-                  (update :visited conj room-id))
+  (let [moved  (-> state
+                   (assoc :current room-id)
+                   (update :visited conj room-id))
         sprung (maybe-fire-trap moved room-id)]
     (cond
-      (= (:mode sprung) :gameover) sprung
+      (= (:mode sprung) :gameover)             sprung
 
       (:cleared (get (:rooms sprung) room-id)) sprung
 
@@ -361,7 +361,7 @@
           :treasure (-> sprung
                         (apply-loot (:loot room))
                         (assoc-in [:rooms room-id :cleared] true))
-          :rest     (let [p (:player sprung)
+          :rest     (let [p      (:player sprung)
                           new-hp (min (:max-hp p) (+ (:hp p) ct/REST-HEAL))]
                       (-> sprung
                           (assoc-in [:player :hp] new-hp)
@@ -372,12 +372,12 @@
           sprung)))))
 
 (defn- try-move [state dir]
-  (let [room (get (:rooms state) (:current state))
+  (let [room   (get (:rooms state) (:current state))
         target (get (:exits room) dir)]
     (cond
       (:pending-descend state) state
-      (nil? target) (log state "There is no exit that way.")
-      :else (enter-room (assoc state :from-dir (opposite dir)) target))))
+      (nil? target)            (log state "There is no exit that way.")
+      :else                    (enter-room (assoc state :from-dir (opposite dir)) target))))
 
 ;; =============================================================================
 ;; Combat damage
@@ -402,12 +402,12 @@
       {:dmg ct/CASTER-DAMAGE :flavor :spell}
 
       :else
-      (let [base (:attack enemy)
-            roll (if (zero? base) 0 (jitter base (quot (* ct/ENEMY-JITTER 100) base)))
-            fury? (and (= a :fury) (rand-percent? ct/ABILITY-CHANCE))
+      (let [base       (:attack enemy)
+            roll       (if (zero? base) 0 (jitter base (quot (* ct/ENEMY-JITTER 100) base)))
+            fury?      (and (= a :fury) (rand-percent? ct/ABILITY-CHANCE))
             after-fury (if fury? (* roll 2) roll)
-            phase? (= a :phase)
-            after-def (if phase? after-fury (- after-fury (:defense player)))]
+            phase?     (= a :phase)
+            after-def  (if phase? after-fury (- after-fury (:defense player)))]
         {:dmg (max 1 after-def)
          :flavor (cond fury? :fury phase? :phase :else :normal)}))))
 
@@ -432,7 +432,7 @@
 (defn- first-alive-idx [enemies]
   (find-index alive? enemies))
 
-(defn- all-dead? [enemies]
+(defn- ^bool all-dead? [enemies]
   (not (some alive? enemies)))
 
 (defn- mark-room-cleared [state]
@@ -444,7 +444,7 @@
       (assoc state :mode :victory)
       (assoc state :mode :explore))))
 
-(defn- combat-xp [enemies]
+(defn- ^int combat-xp [enemies]
   ;; Boss gives 2× XP; regular enemies give max-hp each.
   (let [xp-raw (reduce (fn [s e] (+ s (:max-hp e))) 0 enemies)
         boss?  (get (first enemies) :boss? false)]
@@ -458,29 +458,29 @@
             new-max-hp (+ (:max-hp p) ct/LEVEL-HP-BONUS)
             new-atk    (+ (:attack p) ct/LEVEL-ATK-BONUS)
             new-xp-to  (int (* (:xp-to-next p) ct/XP-SCALE))
-            p2 (-> p
-                   (assoc :level new-level)
-                   (assoc :max-hp new-max-hp)
-                   (update :hp (fn [h] (min new-max-hp (+ h ct/LEVEL-HP-BONUS))))
-                   (assoc :attack new-atk)
-                   (update :xp (fn [x] (- x (:xp-to-next p))))
-                   (assoc :xp-to-next new-xp-to))
-            s2 (-> state
-                   (assoc :player p2)
-                   (log (str "Level up! You are now level " new-level ".")))]
+            p2         (-> p
+                           (assoc :level new-level)
+                           (assoc :max-hp new-max-hp)
+                           (update :hp (fn [h] (min new-max-hp (+ h ct/LEVEL-HP-BONUS))))
+                           (assoc :attack new-atk)
+                           (update :xp (fn [x] (- x (:xp-to-next p))))
+                           (assoc :xp-to-next new-xp-to))
+            s2         (-> state
+                           (assoc :player p2)
+                           (log (str "Level up! You are now level " new-level ".")))]
         (if (zero? (mod new-level ct/BIG-LEVEL-EVERY))
           (assoc s2 :mode :levelup)
           (maybe-level-up s2))))))
 
 (defn- end-combat-victory [state]
   (let [enemies (get-in state [:combat :enemies])
-        xp (combat-xp enemies)
-        s1 (-> state
-               (assoc :combat nil)
-               (mark-room-cleared)
-               (update-in [:player :xp] (fn [x] (+ x xp)))
-               (log "All enemies fall.")
-               (maybe-victory))]
+        xp      (combat-xp enemies)
+        s1      (-> state
+                    (assoc :combat nil)
+                    (mark-room-cleared)
+                    (update-in [:player :xp] (fn [x] (+ x xp)))
+                    (log "All enemies fall.")
+                    (maybe-victory))]
     (if (= (:mode s1) :victory)
       s1
       (maybe-level-up s1))))
@@ -504,28 +504,28 @@
 (defn- tick-statuses [state]
   ;; Ticks player and all combat enemies. Logs player damage. Counts enemy
   ;; status-kills and adds them to :kills.
-  (let [p    (:player state)
-        p2   (tick-entity p)
-        pdmg (- (:hp p) (:hp p2))
-        s1   (if (> pdmg 0)
-               (log (assoc state :player p2)
-                    (str "You suffer " pdmg " from your ailment."))
-               (assoc state :player p2))
-        enemies (get-in s1 [:combat :enemies])
+  (let [p                           (:player state)
+        p2                          (tick-entity p)
+        pdmg                        (- (:hp p) (:hp p2))
+        s1                          (if (> pdmg 0)
+                                      (log (assoc state :player p2)
+                                           (str "You suffer " pdmg " from your ailment."))
+                                      (assoc state :player p2))
+        enemies                     (get-in s1 [:combat :enemies])
         [new-enemies s2 kill-count]
         (reduce
-          (fn [[es st ks] e]
-            (if (not (alive? e))
-              [(conj es e) st ks]
-              (let [e2   (tick-entity e)
-                    edmg (- (:hp e) (:hp e2))
-                    died (and (> edmg 0) (<= (:hp e2) 0))
-                    st2  (if died
-                           (log st (str "The " (:name e) " succumbs."))
-                           st)]
-                [(conj es e2) st2 (if died (inc ks) ks)])))
-          [[] s1 0]
-          enemies)]
+         (fn [[es st ks] e]
+           (if (not (alive? e))
+             [(conj es e) st ks]
+             (let [e2   (tick-entity e)
+                   edmg (- (:hp e) (:hp e2))
+                   died (and (> edmg 0) (<= (:hp e2) 0))
+                   st2  (if died
+                          (log st (str "The " (:name e) " succumbs."))
+                          st)]
+               [(conj es e2) st2 (if died (inc ks) ks)])))
+         [[] s1 0]
+         enemies)]
     (-> s2
         (assoc-in [:combat :enemies] new-enemies)
         (update-in [:player :kills] (fn [k] (+ k kill-count))))))
@@ -538,14 +538,14 @@
     (all-dead? (get-in state [:combat :enemies]))
     (end-combat-victory state)
 
-    :else state))
+    :else                                         state))
 
 (defn- start-round [state]
   (check-post-tick (tick-statuses state)))
 
 (defn- enemy-turn [state]
-  (let [enemies (get-in state [:combat :enemies])
-        idx (first-alive-idx enemies)
+  (let [enemies  (get-in state [:combat :enemies])
+        idx      (first-alive-idx enemies)
         attacker (when idx (get enemies idx))]
     (if (nil? attacker)
       state
@@ -555,16 +555,16 @@
               (assoc-in [:combat :enemies idx :stun] (dec estun))
               (log (str "The " (:name attacker) " staggers, too stunned to act.")))
           (let [{:dmg dmg :flavor flavor} (enemy-damage-roll attacker (:player state))
-                new-hp (- (get-in state [:player :hp]) dmg)
-                base-msg (case flavor
-                           :spell (str "The " (:name attacker) " hurls a bolt for " dmg " damage.")
-                           :fury  (str "The " (:name attacker) " strikes with fury for " dmg " damage!")
-                           :phase (str "The " (:name attacker) " phases through your guard for " dmg " damage.")
-                           (str "The " (:name attacker) " hits you for " dmg " damage."))
-                s2 (-> state
-                       (assoc-in [:player :hp] new-hp)
-                       (log base-msg))
-                s3 (apply-enemy-status s2 attacker)]
+                new-hp                    (- (get-in state [:player :hp]) dmg)
+                base-msg                  (case flavor
+                                            :spell (str "The " (:name attacker) " hurls a bolt for " dmg " damage.")
+                                            :fury  (str "The " (:name attacker) " strikes with fury for " dmg " damage!")
+                                            :phase (str "The " (:name attacker) " phases through your guard for " dmg " damage.")
+                                            (str "The " (:name attacker) " hits you for " dmg " damage."))
+                s2                        (-> state
+                                              (assoc-in [:player :hp] new-hp)
+                                              (log base-msg))
+                s3                        (apply-enemy-status s2 attacker)]
             (if (<= new-hp 0)
               (assoc s3 :mode :gameover)
               s3)))))))
@@ -580,28 +580,28 @@
               (log "You are stunned and cannot attack!")
               (enemy-turn))
           (let [enemies (get-in s1 [:combat :enemies])
-                idx (first-alive-idx enemies)
-                target (get enemies idx)
-                roll (player-damage-roll (:player s1))
+                idx     (first-alive-idx enemies)
+                target  (get enemies idx)
+                roll    (player-damage-roll (:player s1))
                 toughed (apply-tough (:dmg roll) (:ability target))
-                dmg (:dmg toughed)
-                crit (:crit roll)
-                tough? (:tough toughed)
-                new-hp (- (:hp target) dmg)
-                msg (cond
-                      (and crit tough?) (str "Critical! You strike the " (:name target) " for " dmg " (shrugged off some).")
-                      crit              (str "Critical! You strike the " (:name target) " for " dmg " damage.")
-                      tough?            (str "The " (:name target) " shrugs off most of the blow — " dmg " damage.")
-                      :else             (str "You strike the " (:name target) " for " dmg " damage."))
-                s2 (-> s1
-                       (assoc-in [:combat :enemies idx :hp] new-hp)
-                       (update-in [:player :biggest-hit] (fn [b] (max b dmg)))
-                       (log msg))
-                s3 (if (<= new-hp 0)
-                     (-> s2
-                         (update-in [:player :kills] inc)
-                         (log (str "The " (:name target) " falls.")))
-                     s2)]
+                dmg     (:dmg toughed)
+                crit    (:crit roll)
+                tough?  (:tough toughed)
+                new-hp  (- (:hp target) dmg)
+                msg     (cond
+                          (and crit tough?) (str "Critical! You strike the " (:name target) " for " dmg " (shrugged off some).")
+                          crit              (str "Critical! You strike the " (:name target) " for " dmg " damage.")
+                          tough?            (str "The " (:name target) " shrugs off most of the blow — " dmg " damage.")
+                          :else             (str "You strike the " (:name target) " for " dmg " damage."))
+                s2      (-> s1
+                            (assoc-in [:combat :enemies idx :hp] new-hp)
+                            (update-in [:player :biggest-hit] (fn [b] (max b dmg)))
+                            (log msg))
+                s3      (if (<= new-hp 0)
+                          (-> s2
+                              (update-in [:player :kills] inc)
+                              (log (str "The " (:name target) " falls.")))
+                          s2)]
             (if (all-dead? (get-in s3 [:combat :enemies]))
               (end-combat-victory s3)
               (enemy-turn s3))))))))
@@ -626,10 +626,10 @@
       (if (not= :combat (:mode s1))
         s1
         (let [before-hp (get-in s1 [:player :hp])
-              p (consume-item :potion (:player s1))
-              new-hp (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
-              p2 (-> p (assoc :hp new-hp) (update :potions-used inc))
-              gained (- new-hp before-hp)]
+              p         (consume-item :potion (:player s1))
+              new-hp    (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
+              p2        (-> p (assoc :hp new-hp) (update :potions-used inc))
+              gained    (- new-hp before-hp)]
           (-> s1
               (assoc :player p2)
               (log (str "You drink a potion. +" gained " HP."))
@@ -639,10 +639,10 @@
   (if (not (has? :potion (:player state)))
     (log state "You have no potions.")
     (let [before-hp (get-in state [:player :hp])
-          p (consume-item :potion (:player state))
-          new-hp (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
-          p2 (-> p (assoc :hp new-hp) (update :potions-used inc))
-          gained (- new-hp before-hp)]
+          p         (consume-item :potion (:player state))
+          new-hp    (min (:max-hp p) (+ (:hp p) ct/POTION-HEAL))
+          p2        (-> p (assoc :hp new-hp) (update :potions-used inc))
+          gained    (- new-hp before-hp)]
       (-> state
           (assoc :player p2)
           (assoc :mode :explore)
@@ -652,9 +652,9 @@
   (if (not (has? :scroll-heal (:player state)))
     (log state "You have no healing scrolls.")
     (let [before-hp (get-in state [:player :hp])
-          p (consume-item :scroll-heal (:player state))
-          p2 (assoc p :hp (:max-hp p))
-          gained (- (:hp p2) before-hp)]
+          p         (consume-item :scroll-heal (:player state))
+          p2        (assoc p :hp (:max-hp p))
+          gained    (- (:hp p2) before-hp)]
       (-> state
           (assoc :player p2)
           (assoc :mode :explore)
@@ -667,14 +667,14 @@
       (if (not= :combat (:mode s1))
         s1
         (let [enemies (get-in s1 [:combat :enemies])
-              idx (first-alive-idx enemies)
-              target (get enemies idx)
-              p2 (consume-item :bomb (:player s1))
-              s2 (-> s1
-                     (assoc :player p2)
-                     (assoc-in [:combat :enemies idx :hp] 0)
-                     (update-in [:player :kills] inc)
-                     (log (str "You hurl a bomb! The " (:name target) " is blown apart.")))]
+              idx     (first-alive-idx enemies)
+              target  (get enemies idx)
+              p2      (consume-item :bomb (:player s1))
+              s2      (-> s1
+                          (assoc :player p2)
+                          (assoc-in [:combat :enemies idx :hp] 0)
+                          (update-in [:player :kills] inc)
+                          (log (str "You hurl a bomb! The " (:name target) " is blown apart.")))]
           (if (all-dead? (get-in s2 [:combat :enemies]))
             (end-combat-victory s2)
             (enemy-turn s2)))))))
@@ -696,11 +696,11 @@
               before (get-in s1 [:combat :enemies])
               after  (vec (map poison-bomb-hit before))
               kills  (reduce
-                        (fn [n i]
-                          (if (and (alive? (get before i)) (not (alive? (get after i))))
-                            (inc n) n))
-                        0
-                        (for [k :range [0 (count before)]] k))
+                      (fn [n i]
+                        (if (and (alive? (get before i)) (not (alive? (get after i))))
+                          (inc n) n))
+                      0
+                      (for [k :range [0 (count before)]] k))
               s2     (-> s1
                          (assoc :player p2)
                          (assoc-in [:combat :enemies] after)
@@ -753,13 +753,13 @@
 
       :else
       (case cmd
-        :north (try-move state :north)
-        :south (try-move state :south)
-        :east  (try-move state :east)
-        :west  (try-move state :west)
+        :north     (try-move state :north)
+        :south     (try-move state :south)
+        :east      (try-move state :east)
+        :west      (try-move state :west)
         :inventory (assoc state :mode :inventory)
-        :quit  (assoc state :pending-quit true)        ; ask before quitting
-        :noop  state
+        :quit      (assoc state :pending-quit true)        ; ask before quitting
+        :noop      state
         state))
 
     :combat
@@ -803,7 +803,7 @@
           (assoc :mode :explore)
           (log (str "Your skin toughens. +" ct/BIG-DEF-BONUS " defense."))
           (maybe-level-up))
-      :noop state
+      :noop     state
       state)
 
     state))

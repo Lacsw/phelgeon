@@ -1,5 +1,5 @@
-(ns tests\helpers\fixtures
-  (:require phelgeon\content :as ct))
+(ns tests.helpers.fixtures
+  (:require phelgeon.content :as ct))
 
 ;; Hand-crafted states — bypass procgen so combat/explore/inventory tests
 ;; have a known room graph. Keys mirror what (make-initial-state) returns.
@@ -71,7 +71,7 @@
 (defn with-potion
   "Add `n` potions to player inventory."
   [state n]
-  (let [inv (get-in state [:player :inventory])
+  (let [inv  (get-in state [:player :inventory])
         inv2 (vec (concat inv (for [_ :range [0 n]] :potion)))]
     (assoc-in state [:player :inventory] inv2)))
 
@@ -92,7 +92,7 @@
 (defn explore-state-with-room
   "Attach a custom room to entrance via :north; sit player at entrance."
   [room]
-  (let [base (explore-state)
+  (let [base                 (explore-state)
         rooms-without-combat (-> (:rooms base)
                                  (assoc :entrance
                                         {:id :entrance :type :entrance

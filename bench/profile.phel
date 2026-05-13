@@ -1,0 +1,46 @@
+(ns phelgeon.profile
+  (:require phelgeon.core :as c)
+  (:require phelgeon.render :as r))
+
+;; Headless profile harness — exercises pure game functions without touching
+;; STDIN/STDOUT or stty. Deterministic via seeded PRNG so timings are
+;; comparable across runs.
+;;
+;; Run via:  composer profile
+;;     or:   ./vendor/bin/phel profile bench/profile.phel
+
+(php/mt_srand 42)
+
+(def TURNS 4000)
+
+(def EXPLORE-KEYS [:north :south :east :west :inventory :north :south :east :west])
+(def COMBAT-KEYS  [:attack :attack :attack :flee :attack :use-potion :attack])
+(def INV-KEYS     [:slot-1 :slot-2 :back])
+(def LEVELUP-KEYS [:pick-hp :pick-atk :pick-def])
+
+(defn- pick [v i] (get v (mod i (count v))))
+
+(defn- cmd-for [state i]
+  (case (:mode state)
+    :explore   (pick EXPLORE-KEYS i)
+    :combat    (pick COMBAT-KEYS i)
+    :inventory (pick INV-KEYS i)
+    :levelup   (pick LEVELUP-KEYS i)
+    :intro     :enter
+    :enter))
+
+(defn- terminal? [state]
+  (contains? #{:gameover :victory :quit} (:mode state)))
+
+(defn- play []
+  (loop [state (c/make-initial-state) i 0]
+    (cond
+      (>= i TURNS)      state
+      (terminal? state) (recur (c/make-initial-state) (inc i))
+      :else
+      (let [_frame     (r/render state)
+            cmd        (cmd-for state i)
+            next-state (c/step state cmd)]
+        (recur next-state (inc i))))))
+
+(play)

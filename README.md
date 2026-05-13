@@ -1,8 +1,10 @@
 # phelgeon
 
+[![CI](https://github.com/Lacsw/phelgeon/actions/workflows/ci.yml/badge.svg)](https://github.com/Lacsw/phelgeon/actions/workflows/ci.yml)
+
 A procedural, turn-based dungeon crawler for the terminal — written in [Phel](https://phel-lang.org/).
 
-Three floors. Procedurally generated rooms. Multi-enemy combat with abilities. Hidden traps. Named bosses with backstory. A single immutable game state flowing through pure functions.
+Three floors. Procedurally generated rooms. Multi-enemy combat with abilities and status effects. Hidden traps. Named bosses with backstory. XP-driven levelling. A single immutable game state flowing through pure functions.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -33,11 +35,13 @@ Three floors. Procedurally generated rooms. Multi-enemy combat with abilities. H
 ## What's in it
 
 - **Three procedurally generated floors** of 6–8 rooms each, connected as a small graph (some branching, some loops).
-- **Six enemy types** with abilities — Goblin, Cave rat (vanilla), Skeleton (`tough`, may halve damage taken), Orc (`fury`, may double damage), Dark mage (`caster`, fixed-damage spell), Wraith (`phase`, ignores defense).
+- **Nine enemy types** with abilities — Goblin, Cave rat (vanilla), Skeleton (`tough`, may halve damage taken), Orc (`fury`, may double damage), Dark mage (`caster`, fixed-damage spell), Wraith (`phase`, ignores defense), Venomfang (`venom`, poisons on hit), Shocker (`shocker`, may stun), Infernal (`inferno`, burns on hit).
+- **Status effects** — poison (%-of-max-HP per turn), burn (flat damage per turn), stun (skips a turn). Apply to player or enemies, tick at the start of each combat round.
 - **Multi-enemy combat** — combat rooms can have 1 or 2 foes; you fight the front one until it falls, then the next.
 - **Three named bosses** with backstory — Skarn the Bone-Crowned, Mother Rust the Iron Wyrm, the Cinderking. One is randomly chosen for floor 3 each run.
 - **Hidden traps** — 18% of combat / treasure / exit rooms are trapped. Spike traps, dart vents, acid sprays, loose stones.
-- **Five item types** — health potion, iron sword (+5 attack), leather armor (+3 defense), gold, bomb (instant-kill in combat), scroll of healing (full restore).
+- **Eight item types** — health potion, iron sword (+5 attack), leather armor (+3 defense), gold, bomb (instant-kill in combat), poison bomb (damages + poisons every foe), stun scroll (stuns all foes one turn), scroll of healing (full restore).
+- **XP and levelling** — kill enemies to gain XP. Auto-bumps (+10 max HP, +1 attack) every level; every third level prompts you to pick a bigger bonus (+15 max HP / +3 attack / +2 defense).
 - **Critical hits**, flee chance, dynamic difficulty per floor (×1.0 → ×1.4 → ×1.8 stat scaling).
 - **Confirmation before quit** so a stray `q` doesn't end your run.
 - **ANSI-coloured frame in a Unicode box**, re-rendered in place each turn (alternate-screen buffer; doesn't pollute your shell scrollback).
@@ -48,7 +52,7 @@ Three floors. Procedurally generated rooms. Multi-enemy combat with abilities. H
 composer install
 ```
 
-Requires PHP 8.3+.
+Requires PHP 8.4+.
 
 ## Run
 
@@ -59,7 +63,7 @@ composer start
 Or directly:
 
 ```bash
-./vendor/bin/phel run phelgeon\\main
+./vendor/bin/phel run phelgeon.main
 ```
 
 Single-keystroke input — no enter needed for any command.
@@ -71,8 +75,9 @@ Single-keystroke input — no enter needed for any command.
 | Intro     | any key to begin                                                          |
 | Explore   | `n` `s` `e` `w` move · `i` inventory · `q` quit (asks first)              |
 | Descend   | `y` confirm · `n` stay (when standing on the stairs)                      |
-| Combat    | `a` attack · `f` flee (50%) · `u` potion · `b` bomb                       |
+| Combat    | `a` attack · `f` flee (50%) · `u` potion · `b` bomb · `p` poison bomb · `s` stun scroll |
 | Inventory | `1` use potion · `2` use heal scroll · `b` back                           |
+| Level up  | `a` +max HP · `b` +attack · `c` +defense (every third level)              |
 | End screen| any key to exit                                                           |
 
 The current room's exits show `(back)` on whichever direction you came from.
@@ -80,13 +85,16 @@ The current room's exits show `(back)` on whichever direction you came from.
 ## Code layout
 
 ```
-src/phelgeon/
+src/
   main.phel      terminal lifecycle + prompt loop (the ONLY file with I/O)
   core.phel      pure game engine — state transitions, combat, procgen
   content.phel   constants, enemy / loot / description pools, lore
   render.phel    pure ANSI frame builders
+tests/           Phel test suites + fixtures
 docs/superpowers/    spec + plan + brainstorming notes (gitignored)
 ```
+
+Files live directly under `src/`; namespaces are `phelgeon.main`, `phelgeon.core`, etc. Phel reads the namespace from each file's `(ns …)` form, so the directory layout is flat.
 
 State is a single immutable map. Every action is a pure `state → state` function. Randomness is isolated to a few `rand-*` wrappers in `core.phel`. The only place that does I/O — terminal setup, line input, ANSI emit — is `main.phel`.
 

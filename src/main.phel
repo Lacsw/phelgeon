@@ -1,8 +1,8 @@
-(ns phelgeon\main
-  (:require phel\string :as s)
-  (:require phelgeon\core :as c)
-  (:require phelgeon\render :as r)
-  (:require phelgeon\content :as ct))
+(ns phelgeon.main
+  (:require phel.string :as s)
+  (:require phelgeon.core :as c)
+  (:require phelgeon.render :as r)
+  (:require phelgeon.content :as ct))
 
 ;; -----------------------------------------------------------------------------
 ;; Terminal lifecycle: alternate-screen buffer + raw-mode (cbreak) input.
@@ -53,13 +53,13 @@
 ;; ANSI-aware width and box drawing
 ;; -----------------------------------------------------------------------------
 
-(defn- ansi-strip [str-val]
+(defn- ^string ansi-strip [^string str-val]
   (php/preg_replace "/\\x1b\\[[0-9;?]*[a-zA-Z]/" "" str-val))
 
-(defn- visible-len [str-val]
+(defn- visible-len [^string str-val]
   (php/mb_strlen (ansi-strip str-val)))
 
-(defn- pad-right [str-val width]
+(defn- ^string pad-right [^string str-val ^int width]
   (let [vl (visible-len str-val)]
     (if (>= vl width)
       str-val
@@ -69,18 +69,18 @@
   ;; Word-wrap a line to `width` visible columns. Lines containing ANSI escapes
   ;; are passed through unchanged (their visible length is short anyway).
   (cond
-    (<= (visible-len str-val) width) [str-val]
+    (<= (visible-len str-val) width)    [str-val]
     (not= str-val (ansi-strip str-val)) [str-val]   ; has color, skip wrapping
-    :else (php/explode "\n" (php/wordwrap str-val width "\n" true))))
+    :else                               (php/explode "\n" (php/wordwrap str-val width "\n" true))))
 
 (defn- box-frame [content]
-  (let [horiz (php/str_repeat "─" (+ ct/CONTENT-WIDTH 2))
-        top (str "┌" horiz "┐")
-        bot (str "└" horiz "┘")
+  (let [horiz     (php/str_repeat "─" (+ ct/CONTENT-WIDTH 2))
+        top       (str "┌" horiz "┐")
+        bot       (str "└" horiz "┘")
         raw-lines (php/explode "\n" content)
-        wrapped (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
-        boxed (for [l :in wrapped]
-                (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
+        wrapped   (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
+        boxed     (for [l :in wrapped]
+                    (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
     (str top "\n" (s/join "\n" boxed) "\n" bot)))
 
 ;; -----------------------------------------------------------------------------

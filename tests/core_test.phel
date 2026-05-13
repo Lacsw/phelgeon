@@ -1,8 +1,8 @@
-(ns tests\core-test
-  (:require phel\test :refer [deftest is])
-  (:require phelgeon\core :as core)
-  (:require tests\helpers\fixtures :as f)
-  (:require phelgeon\content :as ct))
+(ns tests.core-test
+  (:require phel.test :refer [deftest is])
+  (:require phelgeon.core :as core)
+  (:require tests.helpers.fixtures :as f)
+  (:require phelgeon.content :as ct))
 
 (deftest parse-input-explore-directions
   (is (= :north (core/parse-input "n" :explore)))
@@ -52,7 +52,7 @@
 
 (deftest log-stays-bounded
   ;; Drive many "no exit" log entries and assert log never exceeds MAX-LOG-LINES.
-  (let [s0 (f/explore-state)
+  (let [s0    (f/explore-state)
         ;; The :entrance has only :north exit, so :south/:east/:west all log "no exit"
         steps [:south :east :west :south :east :west :south :east :west :south]
         final (reduce (fn [s cmd] (core/step s cmd)) s0 steps)]
@@ -180,12 +180,12 @@
   ;; :caster early-returns from enemy-damage-roll with {:dmg CASTER-DAMAGE}.
   ;; Defense is irrelevant — set it absurdly high to prove it's never subtracted.
   (let [caster {:name "mage" :hp 99 :max-hp 99 :attack 0 :ability :caster :lore ""}
-        s0 (-> (f/combat-state [caster])
-               (assoc-in [:player :max-hp] 200)
-               (assoc-in [:player :hp] 200)
-               (assoc-in [:player :defense] 999))
-        s1 (core/step s0 :attack)
-        delta (- 200 (get-in s1 [:player :hp]))]
+        s0     (-> (f/combat-state [caster])
+                   (assoc-in [:player :max-hp] 200)
+                   (assoc-in [:player :hp] 200)
+                   (assoc-in [:player :defense] 999))
+        s1     (core/step s0 :attack)
+        delta  (- 200 (get-in s1 [:player :hp]))]
     (is (= ct/CASTER-DAMAGE delta) "Caster damage is exactly CASTER-DAMAGE.")
     (is (= :combat (:mode s1)) "Caster survived player attack; still in combat.")))
 
@@ -194,12 +194,12 @@
   ;; A phase enemy skips the defense subtraction, so damage stays in the
   ;; jittered attack-roll range (7..13 for attack 10, ENEMY-JITTER 3).
   (let [phaser {:name "wraith" :hp 99 :max-hp 99 :attack 10 :ability :phase :lore ""}
-        s0 (-> (f/combat-state [phaser])
-               (assoc-in [:player :max-hp] 200)
-               (assoc-in [:player :hp] 200)
-               (assoc-in [:player :defense] 999))
-        s1 (core/step s0 :attack)
-        delta (- 200 (get-in s1 [:player :hp]))]
+        s0     (-> (f/combat-state [phaser])
+                   (assoc-in [:player :max-hp] 200)
+                   (assoc-in [:player :hp] 200)
+                   (assoc-in [:player :defense] 999))
+        s1     (core/step s0 :attack)
+        delta  (- 200 (get-in s1 [:player :hp]))]
     (is (> delta 1)
         "Defense skipped — damage exceeds the clamp floor of 1 that defense would force.")
     (is (= :combat (:mode s1)) "Phaser survived player attack; still in combat.")))
@@ -207,11 +207,11 @@
 (deftest use-potion-in-combat-consumes-and-triggers-enemy-turn
   ;; Bump max-hp so the cap doesn't mask whether enemy-turn ran.
   ;; Net hp = before + POTION-HEAL - enemy-dmg; enemy-dmg >= 1 so hp < before+POTION-HEAL.
-  (let [s0 (-> (f/combat-state [(f/weak-goblin)])
-               (assoc-in [:player :max-hp] 100)
-               (assoc-in [:player :hp] 5)
-               (f/with-potion 1))
-        s1 (core/step s0 :use-potion)
+  (let [s0       (-> (f/combat-state [(f/weak-goblin)])
+                     (assoc-in [:player :max-hp] 100)
+                     (assoc-in [:player :hp] 5)
+                     (f/with-potion 1))
+        s1       (core/step s0 :use-potion)
         hp-after (get-in s1 [:player :hp])]
     (is (= 0 (count (get-in s1 [:player :inventory]))))
     (is (= 1 (get-in s1 [:player :potions-used])))
@@ -308,17 +308,17 @@
 
 (deftest loot-sword-bumps-attack
   ;; fresh-player has :attack 5; sword bonus is +SWORD-BONUS, permanent.
-  (let [s0 (treasure-with-loot {:item :sword :gold 0})
+  (let [s0     (treasure-with-loot {:item :sword :gold 0})
         before (get-in s0 [:player :attack])
-        s1 (core/step s0 :north)]
+        s1     (core/step s0 :north)]
     (is (= (+ before ct/SWORD-BONUS) (get-in s1 [:player :attack])))
     (is (= 0 (count (get-in s1 [:player :inventory]))) "Sword is not stored in inventory.")
     (is (:cleared (get-in s1 [:rooms :treasure-room])))))
 
 (deftest loot-armor-bumps-defense
-  (let [s0 (treasure-with-loot {:item :armor :gold 0})
+  (let [s0     (treasure-with-loot {:item :armor :gold 0})
         before (get-in s0 [:player :defense])
-        s1 (core/step s0 :north)]
+        s1     (core/step s0 :north)]
     (is (= (+ before ct/ARMOR-BONUS) (get-in s1 [:player :defense])))
     (is (= 0 (count (get-in s1 [:player :inventory]))) "Armor is not stored in inventory.")
     (is (:cleared (get-in s1 [:rooms :treasure-room])))))
@@ -326,11 +326,11 @@
 (deftest trap-fires-on-entry-and-clears-itself
   ;; Walk into combat-room (cleared, no enemies) with :trap true.
   ;; Trap fires before the cleared check, so we observe damage in isolation.
-  (let [s0 (-> (f/explore-state)
-               (assoc-in [:rooms :combat-room :trap] true)
-               (assoc-in [:player :max-hp] 100)
-               (assoc-in [:player :hp] 100))
-        s1 (core/step s0 :north)
+  (let [s0    (-> (f/explore-state)
+                  (assoc-in [:rooms :combat-room :trap] true)
+                  (assoc-in [:player :max-hp] 100)
+                  (assoc-in [:player :hp] 100))
+        s1    (core/step s0 :north)
         delta (- 100 (get-in s1 [:player :hp]))]
     (is (>= delta ct/TRAP-DAMAGE-MIN) "Damage at least TRAP-DAMAGE-MIN.")
     (is (<= delta ct/TRAP-DAMAGE-MAX) "Damage at most TRAP-DAMAGE-MAX.")
@@ -349,14 +349,14 @@
     (is (<= (get-in s1 [:player :hp]) 0))))
 
 (deftest trap-does-not-re-fire-on-revisit
-  (let [s0 (-> (f/explore-state)
-               (assoc-in [:rooms :combat-room :trap] true)
-               (assoc-in [:player :max-hp] 100)
-               (assoc-in [:player :hp] 100))
-        s1 (core/step s0 :north)             ; trap fires
+  (let [s0            (-> (f/explore-state)
+                          (assoc-in [:rooms :combat-room :trap] true)
+                          (assoc-in [:player :max-hp] 100)
+                          (assoc-in [:player :hp] 100))
+        s1            (core/step s0 :north)             ; trap fires
         hp-after-trap (get-in s1 [:player :hp])
-        s2 (core/step s1 :south)             ; back to entrance
-        s3 (core/step s2 :north)]            ; revisit combat-room
+        s2            (core/step s1 :south)             ; back to entrance
+        s3            (core/step s2 :north)]            ; revisit combat-room
     (is (< hp-after-trap 100) "First entry damaged the player.")
     (is (= hp-after-trap (get-in s3 [:player :hp])) "Revisit caused no further HP change.")))
 
@@ -447,14 +447,14 @@
 (deftest status-expires-at-zero-and-stops-damage
   ;; :poison 1 → expires after one tick.
   ;; After two rounds, only 1 round of poison damage should accumulate.
-  (let [enemy (assoc (f/zero-attack-enemy) :ability :none)
-        s0 (-> (f/combat-state [enemy])
-               (assoc-in [:player :poison] 1)
-               (assoc-in [:player :max-hp] 100)
-               (assoc-in [:player :hp] 100))
-        s1 (core/step s0 :attack)
+  (let [enemy           (assoc (f/zero-attack-enemy) :ability :none)
+        s0              (-> (f/combat-state [enemy])
+                            (assoc-in [:player :poison] 1)
+                            (assoc-in [:player :max-hp] 100)
+                            (assoc-in [:player :hp] 100))
+        s1              (core/step s0 :attack)
         hp-after-round1 (get-in s1 [:player :hp])
-        s2 (core/step s1 :attack)
+        s2              (core/step s1 :attack)
         hp-after-round2 (get-in s2 [:player :hp])]
     (is (= 0 (get-in s1 [:player :poison] 0))
         "Poison expired after round 1.")
@@ -467,9 +467,9 @@
   ;; Enemy has 5 hp. Player is stunned → cannot attack → enemy survives.
   ;; Enemy has attack 0 so player doesn't die.
   (let [enemy {:name "target" :hp 5 :max-hp 5 :attack 0 :ability :none :lore ""}
-        s0 (-> (f/combat-state [enemy])
-               (assoc-in [:player :stun] 1))
-        s1 (core/step s0 :attack)]
+        s0    (-> (f/combat-state [enemy])
+                  (assoc-in [:player :stun] 1))
+        s1    (core/step s0 :attack)]
     (is (= :combat (:mode s1))
         "Combat continues — enemy still alive (player was stunned).")
     (is (> (get-in s1 [:combat :enemies 0 :hp]) 0)
@@ -491,15 +491,15 @@
 (deftest venom-ability-poisons-player-on-hit
   ;; Enemy with :venom and attack 0 hits player for 1 damage and applies :poison VENOM-TURNS.
   (let [venom-enemy {:name "Venomfang" :hp 999 :max-hp 999 :attack 0 :ability :venom :lore ""}
-        s0 (f/combat-state [venom-enemy])
-        s1 (core/step s0 :attack)]
+        s0          (f/combat-state [venom-enemy])
+        s1          (core/step s0 :attack)]
     (is (= ct/VENOM-TURNS (get-in s1 [:player :poison] 0))
         "Venom ability applied :poison VENOM-TURNS to player.")))
 
 (deftest inferno-ability-burns-player-on-hit
   (let [inferno-enemy {:name "Infernal" :hp 999 :max-hp 999 :attack 0 :ability :inferno :lore ""}
-        s0 (f/combat-state [inferno-enemy])
-        s1 (core/step s0 :attack)]
+        s0            (f/combat-state [inferno-enemy])
+        s1            (core/step s0 :attack)]
     (is (= ct/INFERNO-TURNS (get-in s1 [:player :burn] 0))
         "Inferno ability applied :burn INFERNO-TURNS to player.")))
 
@@ -509,12 +509,12 @@
   (let [shocker-enemy {:name "Shocker" :hp 999 :max-hp 999 :attack 0 :ability :shocker :lore ""}
         stun-count
         (reduce
-          (fn [n _]
-            (let [s0 (f/combat-state [shocker-enemy])
-                  s1 (core/step s0 :attack)]
-              (+ n (get-in s1 [:player :stun] 0))))
-          0
-          (for [_ :range [0 200]] nil))]
+         (fn [n _]
+           (let [s0 (f/combat-state [shocker-enemy])
+                 s1 (core/step s0 :attack)]
+             (+ n (get-in s1 [:player :stun] 0))))
+         0
+         (for [_ :range [0 200]] nil))]
     (is (> stun-count 0)
         "Shocker applied stun at least once in 200 combat rounds.")))
 
@@ -541,8 +541,8 @@
 
 (deftest poison-bomb-kills-low-hp-enemies-and-ends-combat
   ;; Enemy with hp exactly POISON-BOMB-DAMAGE — dies from bomb.
-  (let [e {:name "dying" :hp ct/POISON-BOMB-DAMAGE :max-hp ct/POISON-BOMB-DAMAGE
-           :attack 0 :ability :none :lore ""}
+  (let [e  {:name "dying" :hp ct/POISON-BOMB-DAMAGE :max-hp ct/POISON-BOMB-DAMAGE
+            :attack 0 :ability :none :lore ""}
         s0 (-> (f/combat-state [e])
                (update-in [:player :inventory] conj :poison-bomb))
         s1 (core/step s0 :use-poison-bomb)]
@@ -566,8 +566,8 @@
 (deftest xp-awarded-after-combat-victory
   ;; Enemy with max-hp 20. After kill, player XP should be 20 (< XP-BASE 30 → no level-up).
   (let [enemy {:name "e" :hp 1 :max-hp 20 :attack 0 :ability :none :lore ""}
-        s0 (f/combat-state [enemy])
-        s1 (core/step s0 :attack)]
+        s0    (f/combat-state [enemy])
+        s1    (core/step s0 :attack)]
     (is (= :explore (:mode s1)))
     (is (= 20 (get-in s1 [:player :xp]))
         "XP equals enemy max-hp.")))
@@ -576,10 +576,10 @@
   ;; xp=25 + enemy max-hp=10 = 35 >= xp-to-next=30 → level 2.
   ;; After level-up: xp = 35-30 = 5, xp-to-next = int(30*1.5) = 45.
   (let [enemy {:name "e" :hp 1 :max-hp 10 :attack 0 :ability :none :lore ""}
-        s0 (-> (f/combat-state [enemy])
-               (assoc-in [:player :xp] 25)
-               (assoc-in [:player :xp-to-next] 30))
-        s1 (core/step s0 :attack)]
+        s0    (-> (f/combat-state [enemy])
+                  (assoc-in [:player :xp] 25)
+                  (assoc-in [:player :xp-to-next] 30))
+        s1    (core/step s0 :attack)]
     (is (= 2 (get-in s1 [:player :level])) "Level incremented.")
     (is (= 5 (get-in s1 [:player :xp])) "XP remainder after level-up.")
     (is (= 45 (get-in s1 [:player :xp-to-next])) "Threshold scaled by 1.5.")
@@ -593,35 +593,35 @@
 (deftest third-level-sets-levelup-mode
   ;; Level 2, xp=44, xp-to-next=45. Enemy max-hp=1 → xp=45 → level 3 (mod 3 = 0 → :levelup).
   (let [enemy {:name "e" :hp 1 :max-hp 1 :attack 0 :ability :none :lore ""}
-        s0 (-> (f/combat-state [enemy])
-               (assoc-in [:player :level] 2)
-               (assoc-in [:player :xp] 44)
-               (assoc-in [:player :xp-to-next] 45))
-        s1 (core/step s0 :attack)]
+        s0    (-> (f/combat-state [enemy])
+                  (assoc-in [:player :level] 2)
+                  (assoc-in [:player :xp] 44)
+                  (assoc-in [:player :xp-to-next] 45))
+        s1    (core/step s0 :attack)]
     (is (= :levelup (:mode s1)) "Third level triggers :levelup mode.")
     (is (= 3 (get-in s1 [:player :level])))))
 
 (deftest levelup-pick-hp-applies-big-hp-bonus
-  (let [s0 (-> (f/explore-state)
-               (assoc :mode :levelup))
+  (let [s0       (-> (f/explore-state)
+                     (assoc :mode :levelup))
         base-max (get-in s0 [:player :max-hp])
-        s1 (core/step s0 :pick-hp)]
+        s1       (core/step s0 :pick-hp)]
     (is (= :explore (:mode s1)) "Returns to explore.")
     (is (= (+ base-max ct/BIG-HP-BONUS) (get-in s1 [:player :max-hp]))
         "Max HP increased by BIG-HP-BONUS.")))
 
 (deftest levelup-pick-atk-applies-big-atk-bonus
-  (let [s0 (-> (f/explore-state)
-               (assoc :mode :levelup))
+  (let [s0       (-> (f/explore-state)
+                     (assoc :mode :levelup))
         base-atk (get-in s0 [:player :attack])
-        s1 (core/step s0 :pick-atk)]
+        s1       (core/step s0 :pick-atk)]
     (is (= :explore (:mode s1)))
     (is (= (+ base-atk ct/BIG-ATK-BONUS) (get-in s1 [:player :attack])))))
 
 (deftest levelup-pick-def-applies-big-def-bonus
-  (let [s0 (-> (f/explore-state)
-               (assoc :mode :levelup))
+  (let [s0       (-> (f/explore-state)
+                     (assoc :mode :levelup))
         base-def (get-in s0 [:player :defense])
-        s1 (core/step s0 :pick-def)]
+        s1       (core/step s0 :pick-def)]
     (is (= :explore (:mode s1)))
     (is (= (+ base-def ct/BIG-DEF-BONUS) (get-in s1 [:player :defense])))))

@@ -39,12 +39,12 @@
     :else         (red s)))
 
 (defn ^string hp-bar [^int hp ^int max-hp]
-  (let [w ct/HP-BAR-WIDTH
-        ratio (if (<= max-hp 0) 0 (max 0 (min 1 (/ hp max-hp))))
-        filled (int (* w ratio))
+  (let [w           ct/HP-BAR-WIDTH
+        ratio       (if (<= max-hp 0) 0 (max 0 (min 1 (/ hp max-hp))))
+        filled      (int (* w ratio))
         empty-cells (- w filled)
-        full (bar-color ratio (repeat-str "█" filled))
-        rest (dim (repeat-str "░" empty-cells))]
+        full        (bar-color ratio (repeat-str "█" filled))
+        rest        (dim (repeat-str "░" empty-cells))]
     (str full rest)))
 
 ;; =============================================================================
@@ -78,7 +78,7 @@
                  (> (get player :poison 0) 0) (green " [poisoned]")
                  (> (get player :burn 0) 0)   (red " [burning]")
                  (> (get player :stun 0) 0)   (yellow " [stunned]")
-                 :else "")]
+                 :else                        "")]
     (str (pad-name "YOU") "HP: " (hp-bar (:hp player) (:max-hp player))
          "  " (:hp player) "/" (:max-hp player)
          "  Lv." (get player :level 1)
@@ -89,27 +89,27 @@
                  (> (get enemy :poison 0) 0) (green " [poisoned]")
                  (> (get enemy :burn 0) 0)   (red " [burning]")
                  (> (get enemy :stun 0) 0)   (yellow " [stunned]")
-                 :else "")]
+                 :else                       "")]
     (str (pad-name (s/upper-case (:name enemy)))
          "HP: " (hp-bar (:hp enemy) (:max-hp enemy))
          "  " (:hp enemy) "/" (:max-hp enemy)
          status)))
 
 (defn- exits-line [room from-dir]
-  (let [dirs (keys (:exits room))
+  (let [dirs      (keys (:exits room))
         formatted (for [d :in dirs]
                     (if (= d from-dir)
                       (str (cyan (name d)) " " (dim "(back)"))
                       (cyan (name d))))
-        joined (s/join (cyan ", ") formatted)]
+        joined    (s/join (cyan ", ") formatted)]
     (str (cyan "Exits: ") joined)))
 
 (defn- log-block [log]
   (let [padded (concat log (repeat ct/MAX-LOG-LINES ""))
-        three (take ct/MAX-LOG-LINES padded)]
+        three  (take ct/MAX-LOG-LINES padded)]
     (s/join "\n"
-      (for [m :in three]
-        (if (s/blank? m) "" (gray (str "― " m)))))))
+            (for [m :in three]
+              (if (s/blank? m) "" (gray (str "― " m)))))))
 
 (defn- presence-line [room]
   (case (:type room)
@@ -140,35 +140,35 @@
 
 (defn- enemy-intro [combat-state]
   (let [enemies (filter alive? (:enemies combat-state))
-        n (count enemies)
+        n       (count enemies)
         first-e (first enemies)]
     (cond
       (:boss? first-e)
       (s/join "\n"
-        (concat
-          [(bold-red (str (:name first-e) ", " (:title first-e) ", awaits."))]
-          (for [line :in (:lore first-e)]
-            (red (str "   " line)))))
+              (concat
+               [(bold-red (str (:name first-e) ", " (:title first-e) ", awaits."))]
+               (for [line :in (:lore first-e)]
+                 (red (str "   " line)))))
 
       (= n 1)
       (s/join "\n"
-        [(red (str (article (:name first-e)) " " (:name first-e) " stands ready."))
-         (red (str "   " (:lore first-e) "."))])
+              [(red (str (article (:name first-e)) " " (:name first-e) " stands ready."))
+               (red (str "   " (:lore first-e) "."))])
 
       :else
       (s/join "\n"
-        (concat
-          [(red (str (count-word n) " foes bar your way:"))]
-          (for [e :in enemies]
-            (red (str "  ― " (:name e) " (" (:lore e) ")"))))))))
+              (concat
+               [(red (str (count-word n) " foes bar your way:"))]
+               (for [e :in enemies]
+                 (red (str "  ― " (:name e) " (" (:lore e) ")"))))))))
 
 ;; =============================================================================
 ;; Mode-specific prompts
 ;; =============================================================================
 
 (defn- explore-prompt [state]
-  (let [room (get (:rooms state) (:current state))
-        dir-keys (keys (:exits room))
+  (let [room      (get (:rooms state) (:current state))
+        dir-keys  (keys (:exits room))
         dir-hints (for [d :in dir-keys]
                     (case d
                       :north (hint "n" "orth")
@@ -176,8 +176,8 @@
                       :east  (hint "e" "ast")
                       :west  (hint "w" "est")
                       ""))
-        inv (:inventory (:player state))
-        inv-hint (if (zero? (count inv))
+        inv       (:inventory (:player state))
+        inv-hint  (if (zero? (count inv))
                    ""
                    (str "  " (hint "i" "nventory")))]
     (str "> " (s/join "  " dir-hints) inv-hint "  " (hint "q" "uit"))))
@@ -194,22 +194,22 @@
         has-bomb   (some (fn [i] (= i :bomb)) inv)
         has-pbomb  (some (fn [i] (= i :poison-bomb)) inv)
         has-scroll (some (fn [i] (= i :stun-scroll)) inv)
-        u (if has-potion (str "  " (hint "u" "se potion")) "")
-        b (if has-bomb   (str "  " (hint "b" "omb")) "")
-        p (if has-pbomb  (str "  " (hint "p" "oison bomb")) "")
-        s (if has-scroll (str "  " (hint "s" "tun scroll")) "")]
+        u          (if has-potion (str "  " (hint "u" "se potion")) "")
+        b          (if has-bomb   (str "  " (hint "b" "omb")) "")
+        p          (if has-pbomb  (str "  " (hint "p" "oison bomb")) "")
+        s          (if has-scroll (str "  " (hint "s" "tun scroll")) "")]
     (str "> " (hint "a" "ttack") "  " (hint "f" "lee") u b p s)))
 
 (defn- ^int count-of [item inv]
   (count (filter (fn [i] (= i item)) inv)))
 
 (defn- inventory-prompt [state]
-  (let [inv (:inventory (:player state))
-        np (count-of :potion inv)
-        nh (count-of :scroll-heal inv)
+  (let [inv   (:inventory (:player state))
+        np    (count-of :potion inv)
+        nh    (count-of :scroll-heal inv)
         parts (filter some?
-                [(when (> np 0) (hint "1" " potion"))
-                 (when (> nh 0) (hint "2" " heal scroll"))])]
+                      [(when (> np 0) (hint "1" " potion"))
+                       (when (> nh 0) (hint "2" " heal scroll"))])]
     (if (zero? (count parts))
       (str "> " (hint "b" "ack") "  (no usable items)")
       (str "> " (s/join "  " parts) "  " (hint "b" "ack")))))
@@ -222,89 +222,89 @@
 ;; =============================================================================
 
 (defn- explore-frame [state]
-  (let [room (get (:rooms state) (:current state))
-        cleared? (:cleared room)
-        desc (:description room)
-        presence (when (not cleared?) (presence-line room))
+  (let [room      (get (:rooms state) (:current state))
+        cleared?  (:cleared room)
+        desc      (:description room)
+        presence  (when (not cleared?) (presence-line room))
         empty-tag (when (and cleared? (#{:combat :boss :treasure :rest} (:type room)))
                     (gray "(empty)"))
-        body (s/join "\n" (filter some? [desc presence empty-tag]))
-        prompt (cond
+        body      (s/join "\n" (filter some? [desc presence empty-tag]))
+        prompt    (cond
                  (:pending-descend state) (descend-prompt)
                  (:pending-quit state)    (quit-prompt)
                  :else                    (explore-prompt state))]
     (s/join "\n"
-      [(header (:floor state) (:floor-name state))
-       ""
-       body
-       ""
-       (thin-divider)
-       ""
-       (player-line (:player state))
-       (exits-line room (:from-dir state))
-       ""
-       (thin-divider)
-       ""
-       prompt
-       ""
-       (log-block (:log state))])))
+            [(header (:floor state) (:floor-name state))
+             ""
+             body
+             ""
+             (thin-divider)
+             ""
+             (player-line (:player state))
+             (exits-line room (:from-dir state))
+             ""
+             (thin-divider)
+             ""
+             prompt
+             ""
+             (log-block (:log state))])))
 
 (defn- combat-frame [state]
-  (let [room (get (:rooms state) (:current state))
+  (let [room    (get (:rooms state) (:current state))
         enemies (filter alive? (get-in state [:combat :enemies]))
-        intro (enemy-intro (:combat state))
-        bars (s/join "\n" (for [e :in enemies] (enemy-line e)))]
+        intro   (enemy-intro (:combat state))
+        bars    (s/join "\n" (for [e :in enemies] (enemy-line e)))]
     (s/join "\n"
-      [(header (:floor state) (:floor-name state))
-       ""
-       (:description room)
-       intro
-       ""
-       (thin-divider)
-       ""
-       bars
-       (player-line (:player state))
-       ""
-       (thin-divider)
-       ""
-       (combat-prompt state)
-       ""
-       (log-block (:log state))])))
+            [(header (:floor state) (:floor-name state))
+             ""
+             (:description room)
+             intro
+             ""
+             (thin-divider)
+             ""
+             bars
+             (player-line (:player state))
+             ""
+             (thin-divider)
+             ""
+             (combat-prompt state)
+             ""
+             (log-block (:log state))])))
 
 (defn- inventory-frame [state]
-  (let [inv (:inventory (:player state))
-        np  (count-of :potion inv)
-        nh  (count-of :scroll-heal inv)
-        nb  (count-of :bomb inv)
-        npb (count-of :poison-bomb inv)
-        nss (count-of :stun-scroll inv)
+  (let [inv   (:inventory (:player state))
+        np    (count-of :potion inv)
+        nh    (count-of :scroll-heal inv)
+        nb    (count-of :bomb inv)
+        npb   (count-of :poison-bomb inv)
+        nss   (count-of :stun-scroll inv)
         lines (filter some?
-                [(when (> np  0) (str "1. Health potion   ×" np))
-                 (when (> nh  0) (str "2. Heal scroll     ×" nh))
-                 (when (> nb  0) (gray (str "   Bomb            ×" nb "  (combat: [b])")))
-                 (when (> npb 0) (gray (str "   Poison bomb     ×" npb "  (combat: [p])")))
-                 (when (> nss 0) (gray (str "   Stun scroll     ×" nss "  (combat: [s])")))])]
+                      [(when (> np  0) (str "1. Health potion   ×" np))
+                       (when (> nh  0) (str "2. Heal scroll     ×" nh))
+                       (when (> nb  0) (gray (str "   Bomb            ×" nb "  (combat: [b])")))
+                       (when (> npb 0) (gray (str "   Poison bomb     ×" npb "  (combat: [p])")))
+                       (when (> nss 0) (gray (str "   Stun scroll     ×" nss "  (combat: [s])")))])]
     (s/join "\n"
-      [(header (:floor state) (:floor-name state))
-       ""
-       (bold-white "Inventory")
-       ""
-       (thin-divider)
-       ""
-       (if (zero? (count lines))
-         (gray "(empty)")
-         (s/join "\n" lines))
-       ""
-       (thin-divider)
-       ""
-       (player-line (:player state))
-       ""
-       (inventory-prompt state)
-       ""
-       (log-block (:log state))])))
+            [(header (:floor state) (:floor-name state))
+             ""
+             (bold-white "Inventory")
+             ""
+             (thin-divider)
+             ""
+             (if (zero? (count lines))
+               (gray "(empty)")
+               (s/join "\n" lines))
+             ""
+             (thin-divider)
+             ""
+             (player-line (:player state))
+             ""
+             (inventory-prompt state)
+             ""
+             (log-block (:log state))])))
 
 (defn- ^string center [^string text]
-  (let [n (count text)
+  (let [n   (count text)
         pad (max 0 (quot (- ct/CONTENT-WIDTH n) 2))]
     (str (php/str_repeat " " pad) text)))
 
@@ -312,15 +312,15 @@
   ;; Compact: must fit in ~17 inner rows so the box is visible in small
   ;; terminals (alt-screen can't be scrolled back to recover lost lines).
   (s/join "\n"
-    (concat
-      [(bold-yellow (center ct/INTRO-TITLE))
-       (dim (center ct/INTRO-SUBTITLE))
-       ""]
-      ct/INTRO-LORE
-      [""]
-      (for [l :in ct/INTRO-CONTROLS] (gray l))
-      [""
-       (cyan "> Press any key to begin.")])))
+          (concat
+           [(bold-yellow (center ct/INTRO-TITLE))
+            (dim (center ct/INTRO-SUBTITLE))
+            ""]
+           ct/INTRO-LORE
+           [""]
+           (for [l :in ct/INTRO-CONTROLS] (gray l))
+           [""
+            (cyan "> Press any key to begin.")])))
 
 (defn- end-frame [state]
   (let [banner (case (:mode state)
@@ -329,39 +329,39 @@
                  :quit     (bold-white  "                    Goodbye.")
                  "")
         flavor (get ct/END-FLAVOR (:mode state))
-        p (:player state)
-        stats [(str "Floors descended ........  " (:floor state))
+        p      (:player state)
+        stats  [(str "Floors descended ........  " (:floor state))
                (str "Level reached ...........  " (get p :level 1))
                (str "Gold collected ..........  " (:gold p))
                (str "Enemies slain ...........  " (:kills p))
                (str "Biggest hit .............  " (:biggest-hit p))
                (str "Potions used ............  " (:potions-used p))]]
     (s/join "\n"
-      (concat
-        ["" banner (divider) ""]
-        (if flavor [(dim flavor) ""] [])
-        stats
-        ["" (end-prompt)]))))
+            (concat
+             ["" banner (divider) ""]
+             (if flavor [(dim flavor) ""] [])
+             stats
+             ["" (end-prompt)]))))
 
 (defn- levelup-frame [state]
   (let [p     (:player state)
         level (:level p)]
     (s/join "\n"
-      [(header (:floor state) (:floor-name state))
-       ""
-       (bold-yellow (str "  LEVEL UP!  You are now level " level "."))
-       ""
-       (thin-divider)
-       ""
-       (str "  " (hint "a" (str " +" ct/BIG-HP-BONUS " max HP")))
-       (str "  " (hint "b" (str " +" ct/BIG-ATK-BONUS " attack")))
-       (str "  " (hint "c" (str " +" ct/BIG-DEF-BONUS " defense")))
-       ""
-       (thin-divider)
-       ""
-       (player-line p)
-       ""
-       (log-block (:log state))])))
+            [(header (:floor state) (:floor-name state))
+             ""
+             (bold-yellow (str "  LEVEL UP!  You are now level " level "."))
+             ""
+             (thin-divider)
+             ""
+             (str "  " (hint "a" (str " +" ct/BIG-HP-BONUS " max HP")))
+             (str "  " (hint "b" (str " +" ct/BIG-ATK-BONUS " attack")))
+             (str "  " (hint "c" (str " +" ct/BIG-DEF-BONUS " defense")))
+             ""
+             (thin-divider)
+             ""
+             (player-line p)
+             ""
+             (log-block (:log state))])))
 
 ;; =============================================================================
 ;; Public entrypoint

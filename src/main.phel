@@ -69,17 +69,17 @@
   ;; Word-wrap a line to `width` visible columns. Lines containing ANSI escapes
   ;; are passed through unchanged (their visible length is short anyway).
   (cond
-    (<= (visible-len str-val) width) [str-val]
+    (<= (visible-len str-val) width)    [str-val]
     (not= str-val (ansi-strip str-val)) [str-val]   ; has color, skip wrapping
-    :else (php/explode "\n" (php/wordwrap str-val width "\n" true))))
+    :else                               (php/explode "\n" (php/wordwrap str-val width "\n" true))))
 
 (defn- box-frame [content]
-  (let [horiz (php/str_repeat "─" (+ ct/CONTENT-WIDTH 2))
-        top (str "┌" horiz "┐")
-        bot (str "└" horiz "┘")
+  (let [horiz     (php/str_repeat "─" (+ ct/CONTENT-WIDTH 2))
+        top       (str "┌" horiz "┐")
+        bot       (str "└" horiz "┘")
         raw-lines (php/explode "\n" content)
-        wrapped (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
-        boxed (for [l :in wrapped]
+        wrapped   (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
+        boxed     (for [l :in wrapped]
                 (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
     (str top "\n" (s/join "\n" boxed) "\n" bot)))
 

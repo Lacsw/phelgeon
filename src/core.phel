@@ -14,7 +14,7 @@
   ;; Inclusive both ends
   (+ lo (rand-int (- hi lo))))
 
-(defn- ^bool rand-percent? [^int pct]
+(defn- rand-percent? [^int pct]
   ;; True with `pct`% probability
   (< (rand-int 99) pct))
 
@@ -272,7 +272,7 @@
 (defn- ^int count-of [item inv]
   (count (filter (fn [i] (= i item)) inv)))
 
-(defn- ^bool has? [item player]
+(defn- has? [item player]
   (> (count-of item (:inventory player)) 0))
 
 (defn- consume-item [item player]
@@ -426,7 +426,7 @@
 ;; Combat helpers
 ;; =============================================================================
 
-(defn- ^bool alive? [enemy]
+(defn- alive? [enemy]
   (> (:hp enemy) 0))
 
 (defn- first-alive-idx [enemies]

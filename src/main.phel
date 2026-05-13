@@ -56,7 +56,7 @@
 (defn- ^string ansi-strip [^string str-val]
   (php/preg_replace "/\\x1b\\[[0-9;?]*[a-zA-Z]/" "" str-val))
 
-(defn- ^int visible-len [^string str-val]
+(defn- visible-len [^string str-val]
   (php/mb_strlen (ansi-strip str-val)))
 
 (defn- ^string pad-right [^string str-val ^int width]

@@ -8,17 +8,17 @@
 
 (defn- ^string ansi [^string code ^string str-val] (str "\e[" code "m" str-val "\e[0m"))
 
-(defn- ^string bold   [^string s] (ansi "1"    s))
-(defn- ^string dim    [^string s] (ansi "2"    s))
-(defn- ^string red    [^string s] (ansi "31"   s))
-(defn- ^string green  [^string s] (ansi "32"   s))
-(defn- ^string yellow [^string s] (ansi "33"   s))
-(defn- ^string cyan   [^string s] (ansi "36"   s))
-(defn- ^string gray   [^string s] (ansi "2;37" s))
-(defn- ^string bold-red    [^string s] (ansi "1;31" s))
-(defn- ^string bold-green  [^string s] (ansi "1;32" s))
-(defn- ^string bold-yellow [^string s] (ansi "1;33" s))
-(defn- ^string bold-white  [^string s] (ansi "1;37" s))
+(defn- bold   [^string s] (ansi "1"    s))
+(defn- dim    [^string s] (ansi "2"    s))
+(defn- red    [^string s] (ansi "31"   s))
+(defn- green  [^string s] (ansi "32"   s))
+(defn- yellow [^string s] (ansi "33"   s))
+(defn- cyan   [^string s] (ansi "36"   s))
+(defn- gray   [^string s] (ansi "2;37" s))
+(defn- bold-red    [^string s] (ansi "1;31" s))
+(defn- bold-green  [^string s] (ansi "1;32" s))
+(defn- bold-yellow [^string s] (ansi "1;33" s))
+(defn- bold-white  [^string s] (ansi "1;37" s))
 
 (defn- hint
   "Render `[x]` with the bracketed letter highlighted."
@@ -51,10 +51,10 @@
 ;; Dividers
 ;; =============================================================================
 
-(defn- ^string divider []
+(defn- divider []
   (repeat-str "━" ct/HEADER-WIDTH))
 
-(defn- ^string thin-divider []
+(defn- thin-divider []
   ;; Subtle dim divider used between sections inside a frame.
   (dim (repeat-str "─" ct/HEADER-WIDTH)))
 
@@ -124,7 +124,7 @@
 ;; Combat: enemy intro / lore display
 ;; =============================================================================
 
-(defn- ^bool alive? [e] (> (:hp e) 0))
+(defn- alive? [e] (> (:hp e) 0))
 
 (defn- ^string count-word [^int n]
   (case n
@@ -133,7 +133,7 @@
     3 "Three"
     (str n)))
 
-(defn- ^string article [^string name]
+(defn- article [^string name]
   ;; "An Orc" / "A Goblin" — pick by first letter sound
   (let [c (s/lower-case (php/substr name 0 1))]
     (if (contains? #{"a" "e" "i" "o" "u"} c) "An" "A")))

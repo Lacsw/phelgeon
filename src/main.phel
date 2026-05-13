@@ -80,7 +80,7 @@
         raw-lines (php/explode "\n" content)
         wrapped   (apply concat (for [l :in raw-lines] (wrap-line l ct/CONTENT-WIDTH)))
         boxed     (for [l :in wrapped]
-                (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
+                    (str "│ " (pad-right l ct/CONTENT-WIDTH) " │"))]
     (str top "\n" (s/join "\n" boxed) "\n" bot)))
 
 ;; -----------------------------------------------------------------------------

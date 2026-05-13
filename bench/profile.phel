@@ -35,11 +35,11 @@
 (defn- play []
   (loop [state (c/make-initial-state) i 0]
     (cond
-      (>= i TURNS) state
+      (>= i TURNS)      state
       (terminal? state) (recur (c/make-initial-state) (inc i))
       :else
-      (let [_frame (r/render state)
-            cmd   (cmd-for state i)
+      (let [_frame     (r/render state)
+            cmd        (cmd-for state i)
             next-state (c/step state cmd)]
         (recur next-state (inc i))))))
 

@@ -17,8 +17,8 @@
 (deftest full-combat-encounter-returns-to-explore
   ;; Walk into a populated combat room, kill the only enemy, land in explore.
   (let [s0      (-> (f/explore-state)
-               (assoc-in [:rooms :combat-room :cleared] false)
-               (assoc-in [:rooms :combat-room :enemies] [(f/weak-goblin)]))
+                    (assoc-in [:rooms :combat-room :cleared] false)
+                    (assoc-in [:rooms :combat-room :enemies] [(f/weak-goblin)]))
         s-final (play s0 [:north :attack])]
     (is (= :explore (:mode s-final)))
     (is (:cleared (get-in s-final [:rooms :combat-room])))

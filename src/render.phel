@@ -178,8 +178,8 @@
                       ""))
         inv       (:inventory (:player state))
         inv-hint  (if (zero? (count inv))
-                   ""
-                   (str "  " (hint "i" "nventory")))]
+                    ""
+                    (str "  " (hint "i" "nventory")))]
     (str "> " (s/join "  " dir-hints) inv-hint "  " (hint "q" "uit"))))
 
 (defn- descend-prompt []
@@ -230,9 +230,9 @@
                     (gray "(empty)"))
         body      (s/join "\n" (filter some? [desc presence empty-tag]))
         prompt    (cond
-                 (:pending-descend state) (descend-prompt)
-                 (:pending-quit state)    (quit-prompt)
-                 :else                    (explore-prompt state))]
+                    (:pending-descend state) (descend-prompt)
+                    (:pending-quit state)    (quit-prompt)
+                    :else                    (explore-prompt state))]
     (s/join "\n"
             [(header (:floor state) (:floor-name state))
              ""
@@ -331,11 +331,11 @@
         flavor (get ct/END-FLAVOR (:mode state))
         p      (:player state)
         stats  [(str "Floors descended ........  " (:floor state))
-               (str "Level reached ...........  " (get p :level 1))
-               (str "Gold collected ..........  " (:gold p))
-               (str "Enemies slain ...........  " (:kills p))
-               (str "Biggest hit .............  " (:biggest-hit p))
-               (str "Potions used ............  " (:potions-used p))]]
+                (str "Level reached ...........  " (get p :level 1))
+                (str "Gold collected ..........  " (:gold p))
+                (str "Enemies slain ...........  " (:kills p))
+                (str "Biggest hit .............  " (:biggest-hit p))
+                (str "Potions used ............  " (:potions-used p))]]
     (s/join "\n"
             (concat
              ["" banner (divider) ""]

@@ -5,12 +5,16 @@
     "license": "MIT",
     "require": {
         "php": ">=8.4",
-        "phel-lang/phel-lang": "dev-main as 0.36.x-dev"
+        "phel-lang/phel-lang": "^0.37"
     },
     "prefer-stable": true,
-    "minimum-stability": "dev",
     "scripts": {
         "start": "phel run phelgeon.main",
-        "test": "phel test"
+        "test": "phel test",
+        "test-random": "phel test --random-order",
+        "build": "phel build",
+        "cache-clear": "phel cache:clear",
+        "doctor": "phel doctor",
+        "profile": "phel profile bench/profile.phel --format=table"
     }
 }

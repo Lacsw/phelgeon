@@ -6,27 +6,27 @@
 ;; ANSI helpers (16-colour)
 ;; =============================================================================
 
-(defn- ansi [code str-val] (str "\e[" code "m" str-val "\e[0m"))
+(defn- ^string ansi [^string code ^string str-val] (str "\e[" code "m" str-val "\e[0m"))
 
-(defn- bold   [s] (ansi "1"    s))
-(defn- dim    [s] (ansi "2"    s))
-(defn- red    [s] (ansi "31"   s))
-(defn- green  [s] (ansi "32"   s))
-(defn- yellow [s] (ansi "33"   s))
-(defn- cyan   [s] (ansi "36"   s))
-(defn- gray   [s] (ansi "2;37" s))
-(defn- bold-red    [s] (ansi "1;31" s))
-(defn- bold-green  [s] (ansi "1;32" s))
-(defn- bold-yellow [s] (ansi "1;33" s))
-(defn- bold-white  [s] (ansi "1;37" s))
+(defn- ^string bold   [^string s] (ansi "1"    s))
+(defn- ^string dim    [^string s] (ansi "2"    s))
+(defn- ^string red    [^string s] (ansi "31"   s))
+(defn- ^string green  [^string s] (ansi "32"   s))
+(defn- ^string yellow [^string s] (ansi "33"   s))
+(defn- ^string cyan   [^string s] (ansi "36"   s))
+(defn- ^string gray   [^string s] (ansi "2;37" s))
+(defn- ^string bold-red    [^string s] (ansi "1;31" s))
+(defn- ^string bold-green  [^string s] (ansi "1;32" s))
+(defn- ^string bold-yellow [^string s] (ansi "1;33" s))
+(defn- ^string bold-white  [^string s] (ansi "1;37" s))
 
 (defn- hint
   "Render `[x]` with the bracketed letter highlighted."
   [letter rest]
   (str (bold-yellow (str "[" letter "]")) rest))
 
-(defn- repeat-str [s n]
-  (apply str (for [_ :range [0 n]] s)))
+(defn- ^string repeat-str [^string s ^int n]
+  (if (<= n 0) "" (php/str_repeat s n)))
 
 ;; =============================================================================
 ;; HP bar
@@ -38,7 +38,7 @@
     (> ratio 0.3) (yellow s)
     :else         (red s)))
 
-(defn hp-bar [hp max-hp]
+(defn ^string hp-bar [^int hp ^int max-hp]
   (let [w ct/HP-BAR-WIDTH
         ratio (if (<= max-hp 0) 0 (max 0 (min 1 (/ hp max-hp))))
         filled (int (* w ratio))
@@ -51,14 +51,14 @@
 ;; Dividers
 ;; =============================================================================
 
-(defn- divider []
+(defn- ^string divider []
   (repeat-str "━" ct/HEADER-WIDTH))
 
-(defn- thin-divider []
+(defn- ^string thin-divider []
   ;; Subtle dim divider used between sections inside a frame.
   (dim (repeat-str "─" ct/HEADER-WIDTH)))
 
-(defn- header [floor floor-name]
+(defn- ^string header [^int floor ^string floor-name]
   (str (bold-white (str "[Floor " floor "]  " floor-name)) "\n" (divider)))
 
 ;; =============================================================================
@@ -67,7 +67,7 @@
 
 (def NAME-COL-WIDTH 12)
 
-(defn- pad-name [name]
+(defn- ^string pad-name [^string name]
   (let [n (count name)]
     (if (>= n NAME-COL-WIDTH)
       name
@@ -124,16 +124,16 @@
 ;; Combat: enemy intro / lore display
 ;; =============================================================================
 
-(defn- alive? [e] (> (:hp e) 0))
+(defn- ^bool alive? [e] (> (:hp e) 0))
 
-(defn- count-word [n]
+(defn- ^string count-word [^int n]
   (case n
     1 "A"
     2 "Two"
     3 "Three"
     (str n)))
 
-(defn- article [name]
+(defn- ^string article [^string name]
   ;; "An Orc" / "A Goblin" — pick by first letter sound
   (let [c (s/lower-case (php/substr name 0 1))]
     (if (contains? #{"a" "e" "i" "o" "u"} c) "An" "A")))
@@ -200,7 +200,7 @@
         s (if has-scroll (str "  " (hint "s" "tun scroll")) "")]
     (str "> " (hint "a" "ttack") "  " (hint "f" "lee") u b p s)))
 
-(defn- count-of [item inv]
+(defn- ^int count-of [item inv]
   (count (filter (fn [i] (= i item)) inv)))
 
 (defn- inventory-prompt [state]
@@ -303,7 +303,7 @@
        ""
        (log-block (:log state))])))
 
-(defn- center [text]
+(defn- ^string center [^string text]
   (let [n (count text)
         pad (max 0 (quot (- ct/CONTENT-WIDTH n) 2))]
     (str (php/str_repeat " " pad) text)))

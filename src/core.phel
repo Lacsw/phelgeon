@@ -10,15 +10,15 @@
 (defn- rand-pick [v]
   (get v (rand-int (dec (count v)))))
 
-(defn- rand-range [lo hi]
+(defn- ^int rand-range [^int lo ^int hi]
   ;; Inclusive both ends
   (+ lo (rand-int (- hi lo))))
 
-(defn- rand-percent? [pct]
+(defn- ^bool rand-percent? [^int pct]
   ;; True with `pct`% probability
   (< (rand-int 99) pct))
 
-(defn- jitter [base pct]
+(defn- ^int jitter [^int base ^int pct]
   ;; base ± pct% (integer math)
   (let [delta (quot (* base pct) 100)]
     (if (<= delta 0)
@@ -125,7 +125,7 @@
                   (recur (add-edge m a b dir-a) (dec remaining) next-pool)
                   (recur m remaining next-pool)))))))
 
-(defn- scale-stat [base mult]
+(defn- ^int scale-stat [^int base mult]
   (max 1 (int (* (jitter base ct/STAT-JITTER-PCT) mult))))
 
 (defn- build-enemy [floor]
@@ -269,10 +269,10 @@
 ;; Inventory helpers
 ;; =============================================================================
 
-(defn- count-of [item inv]
+(defn- ^int count-of [item inv]
   (count (filter (fn [i] (= i item)) inv)))
 
-(defn- has? [item player]
+(defn- ^bool has? [item player]
   (> (count-of item (:inventory player)) 0))
 
 (defn- consume-item [item player]
@@ -317,7 +317,7 @@
 ;; Trap
 ;; =============================================================================
 
-(defn- format-trap-msg [tmpl dmg]
+(defn- ^string format-trap-msg [^string tmpl ^int dmg]
   (s/replace tmpl "{N}" (str dmg)))
 
 (defn- maybe-fire-trap [state room-id]
@@ -426,13 +426,13 @@
 ;; Combat helpers
 ;; =============================================================================
 
-(defn- alive? [enemy]
+(defn- ^bool alive? [enemy]
   (> (:hp enemy) 0))
 
 (defn- first-alive-idx [enemies]
   (find-index alive? enemies))
 
-(defn- all-dead? [enemies]
+(defn- ^bool all-dead? [enemies]
   (not (some alive? enemies)))
 
 (defn- mark-room-cleared [state]
@@ -444,7 +444,7 @@
       (assoc state :mode :victory)
       (assoc state :mode :explore))))
 
-(defn- combat-xp [enemies]
+(defn- ^int combat-xp [enemies]
   ;; Boss gives 2× XP; regular enemies give max-hp each.
   (let [xp-raw (reduce (fn [s e] (+ s (:max-hp e))) 0 enemies)
         boss?  (get (first enemies) :boss? false)]
